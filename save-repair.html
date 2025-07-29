@@ -1,0 +1,808 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>存档修复工具</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-900 text-white p-4">
+    <div class="max-w-4xl mx-auto">
+        <h1 class="text-3xl font-bold mb-6 text-center text-yellow-400">传奇文字游戏 - 存档修复工具</h1>
+        
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <!-- 存档状态检查 -->
+            <div class="bg-gray-800 p-6 rounded-lg">
+                <h2 class="text-xl font-bold mb-4 text-blue-400">存档状态检查</h2>
+                <div class="space-y-2 mb-4">
+                    <button onclick="checkAllSaves()" class="w-full bg-blue-600 hover:bg-blue-700 px-4 py-2 rounded">检查所有存档</button>
+                    <button onclick="checkAutoSave()" class="w-full bg-green-600 hover:bg-green-700 px-4 py-2 rounded">检查自动存档</button>
+                </div>
+                <div id="saveStatus" class="bg-gray-700 p-4 rounded h-64 overflow-y-auto text-sm"></div>
+            </div>
+            
+            <!-- 存档修复操作 -->
+            <div class="bg-gray-800 p-6 rounded-lg">
+                <h2 class="text-xl font-bold mb-4 text-red-400">存档修复操作</h2>
+                <div class="space-y-2 mb-4">
+                    <button onclick="clearAllSaves()" class="w-full bg-red-600 hover:bg-red-700 px-4 py-2 rounded">清除所有存档</button>
+                    <button onclick="createDefaultSave()" class="w-full bg-yellow-600 hover:bg-yellow-700 px-4 py-2 rounded">创建默认存档</button>
+                    <button onclick="repairSaves()" class="w-full bg-purple-600 hover:bg-purple-700 px-4 py-2 rounded">智能修复存档</button>
+                    <button onclick="forceRepairSaves()" class="w-full bg-orange-600 hover:bg-orange-700 px-4 py-2 rounded">强力修复存档</button>
+                    <button onclick="exportSaves()" class="w-full bg-indigo-600 hover:bg-indigo-700 px-4 py-2 rounded">导出存档数据</button>
+                </div>
+                <div id="repairLog" class="bg-gray-700 p-4 rounded h-64 overflow-y-auto text-sm"></div>
+            </div>
+        </div>
+        
+        <!-- 手动存档编辑 -->
+        <div class="bg-gray-800 p-6 rounded-lg mt-6">
+            <h2 class="text-xl font-bold mb-4 text-green-400">手动存档编辑</h2>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                <div>
+                    <label class="block text-sm font-medium mb-2">选择存档槽位:</label>
+                    <select id="slotSelect" class="w-full bg-gray-700 border border-gray-600 rounded px-3 py-2">
+                        <option value="auto">自动存档</option>
+                        <option value="0">存档槽 1</option>
+                        <option value="1">存档槽 2</option>
+                        <option value="2">存档槽 3</option>
+                        <option value="3">存档槽 4</option>
+                        <option value="4">存档槽 5</option>
+                    </select>
+                </div>
+                <div class="flex items-end space-x-2">
+                    <button onclick="loadSaveForEdit()" class="bg-blue-600 hover:bg-blue-700 px-4 py-2 rounded">加载存档</button>
+                    <button onclick="saveSaveFromEdit()" class="bg-green-600 hover:bg-green-700 px-4 py-2 rounded">保存存档</button>
+                </div>
+            </div>
+            <textarea id="saveEditor" class="w-full h-64 bg-gray-700 border border-gray-600 rounded p-3 text-sm font-mono" placeholder="存档JSON数据将显示在这里..."></textarea>
+        </div>
+        
+        <!-- 返回游戏 -->
+        <div class="text-center mt-6">
+            <a href="legend-text.html" class="bg-yellow-600 hover:bg-yellow-700 px-6 py-3 rounded text-lg font-bold">返回游戏</a>
+        </div>
+    </div>
+
+    <script>
+        function log(message, type = 'info') {
+            const statusDiv = document.getElementById('saveStatus');
+            const repairDiv = document.getElementById('repairLog');
+            const time = new Date().toLocaleTimeString();
+            const colorClass = type === 'error' ? 'text-red-400' : type === 'success' ? 'text-green-400' : type === 'warning' ? 'text-yellow-400' : 'text-gray-300';
+            const logEntry = `<div class="${colorClass}">[${time}] ${message}</div>`;
+            
+            if (type === 'repair') {
+                repairDiv.innerHTML += logEntry;
+                repairDiv.scrollTop = repairDiv.scrollHeight;
+            } else {
+                statusDiv.innerHTML += logEntry;
+                statusDiv.scrollTop = statusDiv.scrollHeight;
+            }
+        }
+
+        function checkAllSaves() {
+            document.getElementById('saveStatus').innerHTML = '';
+            log('开始检查所有存档...');
+            
+            // 检查自动存档
+            const autoSave = localStorage.getItem('legendSave_auto');
+            if (autoSave) {
+                try {
+                    const data = JSON.parse(autoSave);
+                    log(`✅ 自动存档正常 - ${data.player.class} 等级${data.player.level} (${data.timestamp})`, 'success');
+                } catch (error) {
+                    log(`❌ 自动存档损坏: ${error.message}`, 'error');
+                }
+            } else {
+                log('⚪ 自动存档不存在', 'warning');
+            }
+            
+            // 检查5个存档槽位
+            for (let i = 0; i < 5; i++) {
+                const saveData = localStorage.getItem(`legendSave_${i}`);
+                if (saveData) {
+                    try {
+                        const data = JSON.parse(saveData);
+                        log(`✅ 存档槽${i + 1}正常 - ${data.player.class} 等级${data.player.level} (${data.timestamp})`, 'success');
+                    } catch (error) {
+                        log(`❌ 存档槽${i + 1}损坏: ${error.message}`, 'error');
+                    }
+                } else {
+                    log(`⚪ 存档槽${i + 1}为空`, 'warning');
+                }
+            }
+            
+            log('存档检查完成');
+        }
+
+        function checkAutoSave() {
+            document.getElementById('saveStatus').innerHTML = '';
+            log('检查自动存档...');
+            
+            const autoSave = localStorage.getItem('legendSave_auto');
+            if (autoSave) {
+                try {
+                    const data = JSON.parse(autoSave);
+                    log('✅ 自动存档数据结构:', 'success');
+                    log(`   职业: ${data.player.class}`);
+                    log(`   等级: ${data.player.level}`);
+                    log(`   金币: ${data.player.gold}`);
+                    log(`   生命值: ${data.player.hp}/${data.player.maxHp}`);
+                    log(`   魔法值: ${data.player.mp}/${data.player.maxMp}`);
+                    log(`   经验值: ${data.player.exp}/${data.player.maxExp}`);
+                    log(`   当前位置: ${data.currentLocation}`);
+                    log(`   保存时间: ${data.timestamp}`);
+                    
+                    // 检查养成系统
+                    if (data.player.cultivation) {
+                        log('✅ 养成系统数据正常:', 'success');
+                        log(`   爆率提升: 等级${data.player.cultivation.dropRate.level}, 经验${data.player.cultivation.dropRate.exp}`);
+                        log(`   伤害提升: 等级${data.player.cultivation.damage.level}, 经验${data.player.cultivation.damage.exp}`);
+                        log(`   鞭尸概率: 等级${data.player.cultivation.whipCorpse.level}, 经验${data.player.cultivation.whipCorpse.exp}`);
+                    } else {
+                        log('⚠️ 养成系统数据缺失', 'warning');
+                    }
+                    
+                    // 检查材料
+                    if (data.player.materials) {
+                        log(`✅ 材料数据正常: ${data.player.materials.length}个材料`, 'success');
+                    } else {
+                        log('⚠️ 材料数据缺失', 'warning');
+                    }
+                    
+                    // 检查任务系统
+                    if (data.player.quests) {
+                        log(`✅ 任务系统数据正常:`, 'success');
+                        log(`   可接任务: ${data.player.quests.available.length}个`);
+                        log(`   进行中任务: ${data.player.quests.active.length}个`);
+                        log(`   已完成任务: ${data.player.quests.completed.length}个`);
+                    } else {
+                        log('⚠️ 任务系统数据缺失', 'warning');
+                    }
+                    
+                    // 检查称号系统
+                    if (data.player.titles) {
+                        log(`✅ 称号系统数据正常:`, 'success');
+                        log(`   拥有称号: ${data.player.titles.owned.length}个`);
+                        log(`   当前称号: ${data.player.titles.current || '无'}`);
+                        log(`   称号卷轴: ${data.player.titles.scrolls.length}个`);
+                    } else {
+                        log('⚠️ 称号系统数据缺失', 'warning');
+                    }
+                    
+                } catch (error) {
+                    log(`❌ 自动存档损坏: ${error.message}`, 'error');
+                    log('原始数据:', 'error');
+                    log(autoSave.substring(0, 200) + '...', 'error');
+                }
+            } else {
+                log('⚪ 自动存档不存在', 'warning');
+            }
+        }
+
+        function clearAllSaves() {
+            if (!confirm('确定要清除所有存档吗？此操作不可恢复！')) {
+                return;
+            }
+            
+            document.getElementById('repairLog').innerHTML = '';
+            log('开始清除所有存档...', 'repair');
+            
+            // 清除自动存档
+            localStorage.removeItem('legendSave_auto');
+            log('✅ 已清除自动存档', 'repair');
+            
+            // 清除5个存档槽位
+            for (let i = 0; i < 5; i++) {
+                localStorage.removeItem(`legendSave_${i}`);
+                log(`✅ 已清除存档槽${i + 1}`, 'repair');
+            }
+            
+            log('所有存档已清除完成', 'repair');
+        }
+
+        function createDefaultSave() {
+            document.getElementById('repairLog').innerHTML = '';
+            log('创建默认存档...', 'repair');
+            
+            const defaultSave = {
+                player: {
+                    class: 'warrior',
+                    level: 1,
+                    hp: 120,
+                    maxHp: 120,
+                    mp: 30,
+                    maxMp: 30,
+                    exp: 0,
+                    maxExp: 100,
+                    gold: 100,
+                    attack: [15, 25],
+                    defense: 8,
+                    equipment: {
+                        weapon: null,
+                        helmet: null,
+                        armor: null,
+                        boots: null,
+                        ring: null,
+                        necklace: null,
+                        special1: null,
+                        special2: null,
+                        special3: null,
+                        special4: null
+                    },
+                    inventory: [],
+                    materials: [],
+                    cultivation: {
+                        dropRate: { level: 0, exp: 0 },
+                        damage: { level: 0, exp: 0 },
+                        whipCorpse: { level: 0, exp: 0 }
+                    },
+                    quests: {
+                        available: [],
+                        active: [],
+                        completed: []
+                    },
+                    titles: {
+                        owned: [],
+                        current: null,
+                        scrolls: []
+                    }
+                },
+                currentLocation: 'village',
+                timestamp: new Date().toLocaleString(),
+                version: '1.0'
+            };
+            
+            localStorage.setItem('legendSave_auto', JSON.stringify(defaultSave));
+            log('✅ 已创建默认自动存档（战士职业，等级1）', 'repair');
+            log('✅ 包含完整的游戏系统：装备、背包、养成、材料、任务、称号', 'repair');
+            log('你可以进入游戏直接继续游戏', 'repair');
+        }
+
+        function repairSaves() {
+            document.getElementById('repairLog').innerHTML = '';
+            log('开始尝试修复存档...', 'repair');
+            
+            let repairedCount = 0;
+            
+            // 修复自动存档
+            const autoSave = localStorage.getItem('legendSave_auto');
+            if (autoSave) {
+                try {
+                    const data = JSON.parse(autoSave);
+                    let needRepair = false;
+                    
+                    // 检查并修复基础玩家数据
+                    if (!data.player) {
+                        log('❌ 自动存档严重损坏：缺少玩家数据', 'repair');
+                        throw new Error('缺少玩家数据');
+                    }
+                    
+                    // 修复基础属性
+                    if (!data.player.class) {
+                        data.player.class = 'warrior';
+                        needRepair = true;
+                        log('🔧 修复自动存档：设置默认职业为战士', 'repair');
+                    }
+                    
+                    if (!data.player.level || data.player.level < 1) {
+                        data.player.level = 1;
+                        needRepair = true;
+                        log('🔧 修复自动存档：设置默认等级为1', 'repair');
+                    }
+                    
+                    if (!data.player.hp || !data.player.maxHp) {
+                        data.player.hp = 120;
+                        data.player.maxHp = 120;
+                        needRepair = true;
+                        log('🔧 修复自动存档：设置默认生命值', 'repair');
+                    }
+                    
+                    if (!data.player.mp || !data.player.maxMp) {
+                        data.player.mp = 30;
+                        data.player.maxMp = 30;
+                        needRepair = true;
+                        log('🔧 修复自动存档：设置默认魔法值', 'repair');
+                    }
+                    
+                    if (data.player.gold === undefined || data.player.gold === null) {
+                        data.player.gold = 100;
+                        needRepair = true;
+                        log('🔧 修复自动存档：设置默认金币', 'repair');
+                    }
+                    
+                    // 修复装备系统
+                    if (!data.player.equipment) {
+                        data.player.equipment = {
+                            weapon: null,
+                            helmet: null,
+                            armor: null,
+                            boots: null,
+                            ring: null,
+                            necklace: null,
+                            special1: null,
+                            special2: null,
+                            special3: null,
+                            special4: null
+                        };
+                        needRepair = true;
+                        log('🔧 修复自动存档：添加装备系统数据', 'repair');
+                    }
+                    
+                    // 修复背包系统
+                    if (!data.player.inventory) {
+                        data.player.inventory = [];
+                        needRepair = true;
+                        log('🔧 修复自动存档：添加背包系统数据', 'repair');
+                    }
+                    
+                    // 检查并修复养成系统
+                    if (!data.player.cultivation) {
+                        data.player.cultivation = {
+                            dropRate: { level: 0, exp: 0 },
+                            damage: { level: 0, exp: 0 },
+                            whipCorpse: { level: 0, exp: 0 }
+                        };
+                        needRepair = true;
+                        log('🔧 修复自动存档：添加养成系统数据', 'repair');
+                    }
+                    
+                    // 检查并修复材料系统
+                    if (!data.player.materials) {
+                        data.player.materials = [];
+                        needRepair = true;
+                        log('🔧 修复自动存档：添加材料系统数据', 'repair');
+                    }
+                    
+                    // 检查并修复任务系统
+                    if (!data.player.quests) {
+                        data.player.quests = {
+                            available: [],
+                            active: [],
+                            completed: []
+                        };
+                        needRepair = true;
+                        log('🔧 修复自动存档：添加任务系统数据', 'repair');
+                    }
+                    
+                    // 检查并修复称号系统
+                    if (!data.player.titles) {
+                        data.player.titles = {
+                            owned: [],
+                            current: null,
+                            scrolls: []
+                        };
+                        needRepair = true;
+                        log('🔧 修复自动存档：添加称号系统数据', 'repair');
+                    }
+                    
+                    // 检查当前位置
+                    if (!data.currentLocation) {
+                        data.currentLocation = 'village';
+                        needRepair = true;
+                        log('🔧 修复自动存档：设置默认位置为村庄', 'repair');
+                    }
+                    
+                    // 检查版本号
+                    if (!data.version) {
+                        data.version = '1.0';
+                        needRepair = true;
+                    }
+                    
+                    // 检查时间戳
+                    if (!data.timestamp) {
+                        data.timestamp = new Date().toLocaleString();
+                        needRepair = true;
+                        log('🔧 修复自动存档：添加时间戳', 'repair');
+                    }
+                    
+                    if (needRepair) {
+                        localStorage.setItem('legendSave_auto', JSON.stringify(data));
+                        repairedCount++;
+                        log('✅ 自动存档修复完成', 'repair');
+                    } else {
+                        log('✅ 自动存档无需修复', 'repair');
+                    }
+                } catch (error) {
+                    log(`❌ 自动存档无法修复: ${error.message}`, 'repair');
+                    localStorage.removeItem('legendSave_auto');
+                    log('🗑️ 已删除损坏的自动存档', 'repair');
+                }
+            }
+            
+            // 修复5个存档槽位
+            for (let i = 0; i < 5; i++) {
+                const saveData = localStorage.getItem(`legendSave_${i}`);
+                if (saveData) {
+                    try {
+                        const data = JSON.parse(saveData);
+                        let needRepair = false;
+                        
+                        // 检查并修复基础玩家数据
+                        if (!data.player) {
+                            log(`❌ 存档槽${i + 1}严重损坏：缺少玩家数据`, 'repair');
+                            throw new Error('缺少玩家数据');
+                        }
+                        
+                        // 修复基础属性
+                        if (!data.player.class) {
+                            data.player.class = 'warrior';
+                            needRepair = true;
+                            log(`🔧 修复存档槽${i + 1}：设置默认职业为战士`, 'repair');
+                        }
+                        
+                        if (!data.player.level || data.player.level < 1) {
+                            data.player.level = 1;
+                            needRepair = true;
+                            log(`🔧 修复存档槽${i + 1}：设置默认等级为1`, 'repair');
+                        }
+                        
+                        if (!data.player.hp || !data.player.maxHp) {
+                            data.player.hp = 120;
+                            data.player.maxHp = 120;
+                            needRepair = true;
+                            log(`🔧 修复存档槽${i + 1}：设置默认生命值`, 'repair');
+                        }
+                        
+                        if (!data.player.mp || !data.player.maxMp) {
+                            data.player.mp = 30;
+                            data.player.maxMp = 30;
+                            needRepair = true;
+                            log(`🔧 修复存档槽${i + 1}：设置默认魔法值`, 'repair');
+                        }
+                        
+                        if (data.player.gold === undefined || data.player.gold === null) {
+                            data.player.gold = 100;
+                            needRepair = true;
+                            log(`🔧 修复存档槽${i + 1}：设置默认金币`, 'repair');
+                        }
+                        
+                        // 修复装备系统
+                        if (!data.player.equipment) {
+                            data.player.equipment = {
+                                weapon: null,
+                                helmet: null,
+                                armor: null,
+                                boots: null,
+                                ring: null,
+                                necklace: null,
+                                special1: null,
+                                special2: null,
+                                special3: null,
+                                special4: null
+                            };
+                            needRepair = true;
+                            log(`🔧 修复存档槽${i + 1}：添加装备系统数据`, 'repair');
+                        }
+                        
+                        // 修复背包系统
+                        if (!data.player.inventory) {
+                            data.player.inventory = [];
+                            needRepair = true;
+                            log(`🔧 修复存档槽${i + 1}：添加背包系统数据`, 'repair');
+                        }
+                        
+                        // 检查并修复养成系统
+                        if (!data.player.cultivation) {
+                            data.player.cultivation = {
+                                dropRate: { level: 0, exp: 0 },
+                                damage: { level: 0, exp: 0 },
+                                whipCorpse: { level: 0, exp: 0 }
+                            };
+                            needRepair = true;
+                            log(`🔧 修复存档槽${i + 1}：添加养成系统数据`, 'repair');
+                        }
+                        
+                        // 检查并修复材料系统
+                        if (!data.player.materials) {
+                            data.player.materials = [];
+                            needRepair = true;
+                            log(`🔧 修复存档槽${i + 1}：添加材料系统数据`, 'repair');
+                        }
+                        
+                        // 检查并修复任务系统
+                        if (!data.player.quests) {
+                            data.player.quests = {
+                                available: [],
+                                active: [],
+                                completed: []
+                            };
+                            needRepair = true;
+                            log(`🔧 修复存档槽${i + 1}：添加任务系统数据`, 'repair');
+                        }
+                        
+                        // 检查并修复称号系统
+                        if (!data.player.titles) {
+                            data.player.titles = {
+                                owned: [],
+                                current: null,
+                                scrolls: []
+                            };
+                            needRepair = true;
+                            log(`🔧 修复存档槽${i + 1}：添加称号系统数据`, 'repair');
+                        }
+                        
+                        // 检查当前位置
+                        if (!data.currentLocation) {
+                            data.currentLocation = 'village';
+                            needRepair = true;
+                            log(`🔧 修复存档槽${i + 1}：设置默认位置为村庄`, 'repair');
+                        }
+                        
+                        // 检查版本号
+                        if (!data.version) {
+                            data.version = '1.0';
+                            needRepair = true;
+                        }
+                        
+                        // 检查时间戳
+                        if (!data.timestamp) {
+                            data.timestamp = new Date().toLocaleString();
+                            needRepair = true;
+                            log(`🔧 修复存档槽${i + 1}：添加时间戳`, 'repair');
+                        }
+                        
+                        if (needRepair) {
+                            localStorage.setItem(`legendSave_${i}`, JSON.stringify(data));
+                            repairedCount++;
+                            log(`✅ 存档槽${i + 1}修复完成`, 'repair');
+                        } else {
+                            log(`✅ 存档槽${i + 1}无需修复`, 'repair');
+                        }
+                    } catch (error) {
+                        log(`❌ 存档槽${i + 1}无法修复: ${error.message}`, 'repair');
+                        localStorage.removeItem(`legendSave_${i}`);
+                        log(`🗑️ 已删除损坏的存档槽${i + 1}`, 'repair');
+                    }
+                }
+            }
+            
+            log(`修复完成！共修复了 ${repairedCount} 个存档`, 'repair');
+        }
+        
+        function forceRepairSaves() {
+            if (!confirm('强力修复会尝试修复严重损坏的存档，可能会丢失部分数据。确定继续吗？')) {
+                return;
+            }
+            
+            document.getElementById('repairLog').innerHTML = '';
+            log('开始强力修复存档...', 'repair');
+            
+            let repairedCount = 0;
+            
+            // 强力修复自动存档
+            const autoSave = localStorage.getItem('legendSave_auto');
+            if (autoSave) {
+                try {
+                    // 尝试修复JSON格式错误
+                    let cleanedData = autoSave;
+                    
+                    // 移除可能的非法字符
+                    cleanedData = cleanedData.replace(/[\x00-\x1F\x7F-\x9F]/g, '');
+                    
+                    // 尝试修复常见的JSON错误
+                    cleanedData = cleanedData.replace(/,\s*}/g, '}');
+                    cleanedData = cleanedData.replace(/,\s*]/g, ']');
+                    
+                    const data = JSON.parse(cleanedData);
+                    
+                    // 如果解析成功，进行完整的数据修复
+                    const repairedData = createCompletePlayerData(data);
+                    
+                    localStorage.setItem('legendSave_auto', JSON.stringify(repairedData));
+                    repairedCount++;
+                    log('✅ 自动存档强力修复完成', 'repair');
+                    
+                } catch (error) {
+                    log(`❌ 自动存档无法修复，创建新的默认存档: ${error.message}`, 'repair');
+                    const defaultData = createCompletePlayerData({});
+                    localStorage.setItem('legendSave_auto', JSON.stringify(defaultData));
+                    repairedCount++;
+                    log('✅ 已创建新的自动存档', 'repair');
+                }
+            }
+            
+            // 强力修复5个存档槽位
+            for (let i = 0; i < 5; i++) {
+                const saveData = localStorage.getItem(`legendSave_${i}`);
+                if (saveData) {
+                    try {
+                        // 尝试修复JSON格式错误
+                        let cleanedData = saveData;
+                        
+                        // 移除可能的非法字符
+                        cleanedData = cleanedData.replace(/[\x00-\x1F\x7F-\x9F]/g, '');
+                        
+                        // 尝试修复常见的JSON错误
+                        cleanedData = cleanedData.replace(/,\s*}/g, '}');
+                        cleanedData = cleanedData.replace(/,\s*]/g, ']');
+                        
+                        const data = JSON.parse(cleanedData);
+                        
+                        // 如果解析成功，进行完整的数据修复
+                        const repairedData = createCompletePlayerData(data);
+                        
+                        localStorage.setItem(`legendSave_${i}`, JSON.stringify(repairedData));
+                        repairedCount++;
+                        log(`✅ 存档槽${i + 1}强力修复完成`, 'repair');
+                        
+                    } catch (error) {
+                        log(`❌ 存档槽${i + 1}无法修复，已删除: ${error.message}`, 'repair');
+                        localStorage.removeItem(`legendSave_${i}`);
+                    }
+                }
+            }
+            
+            log(`强力修复完成！共修复了 ${repairedCount} 个存档`, 'repair');
+        }
+        
+        function createCompletePlayerData(existingData = {}) {
+            const defaultPlayer = {
+                class: 'warrior',
+                level: 1,
+                hp: 120,
+                maxHp: 120,
+                mp: 30,
+                maxMp: 30,
+                exp: 0,
+                maxExp: 100,
+                gold: 100,
+                attack: [15, 25],
+                defense: 8,
+                equipment: {
+                    weapon: null,
+                    helmet: null,
+                    armor: null,
+                    boots: null,
+                    ring: null,
+                    necklace: null,
+                    special1: null,
+                    special2: null,
+                    special3: null,
+                    special4: null
+                },
+                inventory: [],
+                materials: [],
+                cultivation: {
+                    dropRate: { level: 0, exp: 0 },
+                    damage: { level: 0, exp: 0 },
+                    whipCorpse: { level: 0, exp: 0 }
+                },
+                quests: {
+                    available: [],
+                    active: [],
+                    completed: []
+                },
+                titles: {
+                    owned: [],
+                    current: null,
+                    scrolls: []
+                }
+            };
+            
+            // 合并现有数据和默认数据
+            const player = { ...defaultPlayer };
+            
+            if (existingData.player) {
+                // 保留有效的现有数据
+                if (existingData.player.class) player.class = existingData.player.class;
+                if (existingData.player.level && existingData.player.level > 0) player.level = existingData.player.level;
+                if (existingData.player.hp) player.hp = existingData.player.hp;
+                if (existingData.player.maxHp) player.maxHp = existingData.player.maxHp;
+                if (existingData.player.mp) player.mp = existingData.player.mp;
+                if (existingData.player.maxMp) player.maxMp = existingData.player.maxMp;
+                if (existingData.player.exp !== undefined) player.exp = existingData.player.exp;
+                if (existingData.player.maxExp) player.maxExp = existingData.player.maxExp;
+                if (existingData.player.gold !== undefined) player.gold = existingData.player.gold;
+                if (existingData.player.attack) player.attack = existingData.player.attack;
+                if (existingData.player.defense) player.defense = existingData.player.defense;
+                
+                // 合并复杂对象
+                if (existingData.player.equipment) {
+                    player.equipment = { ...defaultPlayer.equipment, ...existingData.player.equipment };
+                }
+                if (existingData.player.inventory) {
+                    player.inventory = existingData.player.inventory;
+                }
+                if (existingData.player.materials) {
+                    player.materials = existingData.player.materials;
+                }
+                if (existingData.player.cultivation) {
+                    player.cultivation = { ...defaultPlayer.cultivation, ...existingData.player.cultivation };
+                }
+                if (existingData.player.quests) {
+                    player.quests = { ...defaultPlayer.quests, ...existingData.player.quests };
+                }
+                if (existingData.player.titles) {
+                    player.titles = { ...defaultPlayer.titles, ...existingData.player.titles };
+                }
+            }
+            
+            return {
+                player: player,
+                currentLocation: existingData.currentLocation || 'village',
+                timestamp: new Date().toLocaleString(),
+                version: '1.0'
+            };
+        }
+
+        function exportSaves() {
+            document.getElementById('repairLog').innerHTML = '';
+            log('导出存档数据...', 'repair');
+            
+            const allSaves = {};
+            
+            // 导出自动存档
+            const autoSave = localStorage.getItem('legendSave_auto');
+            if (autoSave) {
+                allSaves.auto = autoSave;
+            }
+            
+            // 导出5个存档槽位
+            for (let i = 0; i < 5; i++) {
+                const saveData = localStorage.getItem(`legendSave_${i}`);
+                if (saveData) {
+                    allSaves[`slot_${i}`] = saveData;
+                }
+            }
+            
+            const exportData = JSON.stringify(allSaves, null, 2);
+            
+            // 创建下载链接
+            const blob = new Blob([exportData], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `legend_saves_${new Date().toISOString().slice(0, 10)}.json`;
+            a.click();
+            URL.revokeObjectURL(url);
+            
+            log('✅ 存档数据已导出到文件', 'repair');
+        }
+
+        function loadSaveForEdit() {
+            const slotSelect = document.getElementById('slotSelect');
+            const saveEditor = document.getElementById('saveEditor');
+            const slot = slotSelect.value;
+            
+            const saveKey = slot === 'auto' ? 'legendSave_auto' : `legendSave_${slot}`;
+            const saveData = localStorage.getItem(saveKey);
+            
+            if (saveData) {
+                try {
+                    const data = JSON.parse(saveData);
+                    saveEditor.value = JSON.stringify(data, null, 2);
+                    log(`已加载${slot === 'auto' ? '自动存档' : `存档槽${parseInt(slot) + 1}`}到编辑器`);
+                } catch (error) {
+                    saveEditor.value = saveData;
+                    log(`存档损坏，已加载原始数据`, 'error');
+                }
+            } else {
+                saveEditor.value = '';
+                log(`${slot === 'auto' ? '自动存档' : `存档槽${parseInt(slot) + 1}`}不存在`, 'warning');
+            }
+        }
+
+        function saveSaveFromEdit() {
+            const slotSelect = document.getElementById('slotSelect');
+            const saveEditor = document.getElementById('saveEditor');
+            const slot = slotSelect.value;
+            
+            try {
+                const data = JSON.parse(saveEditor.value);
+                const saveKey = slot === 'auto' ? 'legendSave_auto' : `legendSave_${slot}`;
+                localStorage.setItem(saveKey, JSON.stringify(data));
+                log(`✅ 已保存到${slot === 'auto' ? '自动存档' : `存档槽${parseInt(slot) + 1}`}`, 'success');
+            } catch (error) {
+                log(`❌ 保存失败: ${error.message}`, 'error');
+            }
+        }
+
+        // 页面加载时自动检查存档
+        window.onload = function() {
+            checkAllSaves();
+        };
+    </script>
+</body>
+</html>

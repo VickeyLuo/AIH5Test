@@ -1,0 +1,207 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>养成系统检查</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-900 text-white p-4">
+    <div class="max-w-4xl mx-auto">
+        <h1 class="text-2xl font-bold mb-4">养成系统检查工具</h1>
+        
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+            <button onclick="checkGameInIframe()" class="bg-blue-600 hover:bg-blue-700 px-4 py-2 rounded">检查游戏状态</button>
+            <button onclick="testCultivationInIframe()" class="bg-green-600 hover:bg-green-700 px-4 py-2 rounded">测试养成系统</button>
+            <button onclick="addTestMaterials()" class="bg-yellow-600 hover:bg-yellow-700 px-4 py-2 rounded">添加测试材料</button>
+            <button onclick="showCultivationInIframe()" class="bg-purple-600 hover:bg-purple-700 px-4 py-2 rounded">显示养成面板</button>
+        </div>
+        
+        <div id="output" class="bg-gray-800 p-4 rounded mb-4 h-64 overflow-y-auto"></div>
+        
+        <iframe id="gameFrame" src="legend-text.html" class="w-full h-96 border border-gray-600 rounded"></iframe>
+    </div>
+
+    <script>
+        function log(message) {
+            const output = document.getElementById('output');
+            const time = new Date().toLocaleTimeString();
+            output.innerHTML += `<div>[${time}] ${message}</div>`;
+            output.scrollTop = output.scrollHeight;
+        }
+
+        function checkGameInIframe() {
+            const iframe = document.getElementById('gameFrame');
+            const iframeWindow = iframe.contentWindow;
+            
+            try {
+                log('检查游戏状态...');
+                
+                if (typeof iframeWindow.gameState === 'undefined') {
+                    log('❌ gameState 未定义');
+                    return;
+                }
+                
+                log('✅ gameState 已定义');
+                
+                const player = iframeWindow.gameState.player;
+                if (!player) {
+                    log('❌ player 对象不存在');
+                    return;
+                }
+                
+                log(`✅ 玩家职业: ${player.class || '未选择'}`);
+                log(`✅ 玩家等级: ${player.level}`);
+                log(`✅ 玩家金币: ${player.gold}`);
+                
+                if (!player.cultivation) {
+                    log('❌ cultivation 对象不存在');
+                    return;
+                }
+                
+                log('✅ cultivation 对象存在');
+                log(`   - 爆率提升: 等级${player.cultivation.dropRate.level}, 经验${player.cultivation.dropRate.exp}`);
+                log(`   - 伤害提升: 等级${player.cultivation.damage.level}, 经验${player.cultivation.damage.exp}`);
+                log(`   - 鞭尸概率: 等级${player.cultivation.whipCorpse.level}, 经验${player.cultivation.whipCorpse.exp}`);
+                
+                if (!player.materials) {
+                    log('❌ materials 数组不存在');
+                    return;
+                }
+                
+                log(`✅ materials 数组存在，包含 ${player.materials.length} 个材料`);
+                player.materials.forEach((material, index) => {
+                    log(`   - ${material.name}: ${material.count}`);
+                });
+                
+            } catch (error) {
+                log(`❌ 检查失败: ${error.message}`);
+            }
+        }
+
+        function testCultivationInIframe() {
+            const iframe = document.getElementById('gameFrame');
+            const iframeWindow = iframe.contentWindow;
+            
+            try {
+                log('测试养成系统函数...');
+                
+                // 检查函数是否存在
+                const functions = ['showCultivationPanel', 'hideCultivationPanel', 'upgradeCultivation', 'buyCultivationMaterial', 'updateCultivationDisplay'];
+                
+                functions.forEach(funcName => {
+                    if (typeof iframeWindow[funcName] === 'function') {
+                        log(`✅ ${funcName} 函数存在`);
+                    } else {
+                        log(`❌ ${funcName} 函数不存在`);
+                    }
+                });
+                
+                // 检查HTML元素
+                const iframeDoc = iframe.contentDocument;
+                const elements = ['cultivationArea', 'dropRateLevel', 'damageLevel', 'whipCorpseLevel'];
+                
+                elements.forEach(elementId => {
+                    const element = iframeDoc.getElementById(elementId);
+                    if (element) {
+                        log(`✅ 元素 ${elementId} 存在`);
+                    } else {
+                        log(`❌ 元素 ${elementId} 不存在`);
+                    }
+                });
+                
+            } catch (error) {
+                log(`❌ 测试失败: ${error.message}`);
+            }
+        }
+
+        function addTestMaterials() {
+            const iframe = document.getElementById('gameFrame');
+            const iframeWindow = iframe.contentWindow;
+            
+            try {
+                log('添加测试材料...');
+                
+                if (!iframeWindow.gameState || !iframeWindow.gameState.player) {
+                    log('❌ 游戏状态不存在');
+                    return;
+                }
+                
+                const player = iframeWindow.gameState.player;
+                
+                // 添加测试材料
+                const testMaterials = [
+                    { name: '强化石', count: 10, description: '用于提升爆率' },
+                    { name: '力量药水', count: 5, description: '用于提升伤害' },
+                    { name: '诅咒符文', count: 3, description: '用于提升鞭尸概率' }
+                ];
+                
+                testMaterials.forEach(material => {
+                    const existing = player.materials.find(m => m.name === material.name);
+                    if (existing) {
+                        existing.count += material.count;
+                        log(`✅ 增加 ${material.name} x${material.count}`);
+                    } else {
+                        player.materials.push({...material});
+                        log(`✅ 添加 ${material.name} x${material.count}`);
+                    }
+                });
+                
+                // 添加金币
+                player.gold += 1000;
+                log('✅ 添加 1000 金币');
+                
+                // 更新UI
+                if (typeof iframeWindow.updateUI === 'function') {
+                    iframeWindow.updateUI();
+                    log('✅ UI 已更新');
+                }
+                
+            } catch (error) {
+                log(`❌ 添加材料失败: ${error.message}`);
+            }
+        }
+
+        function showCultivationInIframe() {
+            const iframe = document.getElementById('gameFrame');
+            const iframeWindow = iframe.contentWindow;
+            
+            try {
+                log('尝试显示养成面板...');
+                
+                if (typeof iframeWindow.showCultivationPanel === 'function') {
+                    iframeWindow.showCultivationPanel();
+                    log('✅ 调用 showCultivationPanel() 成功');
+                    
+                    // 检查面板是否显示
+                    setTimeout(() => {
+                        const iframeDoc = iframe.contentDocument;
+                        const cultivationArea = iframeDoc.getElementById('cultivationArea');
+                        if (cultivationArea && !cultivationArea.classList.contains('hidden')) {
+                            log('✅ 养成面板已显示');
+                        } else {
+                            log('❌ 养成面板未显示');
+                        }
+                    }, 100);
+                } else {
+                    log('❌ showCultivationPanel 函数不存在');
+                }
+                
+            } catch (error) {
+                log(`❌ 显示面板失败: ${error.message}`);
+            }
+        }
+
+        // 等待iframe加载完成
+        window.onload = function() {
+            const iframe = document.getElementById('gameFrame');
+            iframe.onload = function() {
+                log('游戏页面已加载完成');
+                setTimeout(() => {
+                    checkGameInIframe();
+                }, 1000);
+            };
+        };
+    </script>
+</body>
+</html>

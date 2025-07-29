@@ -1,0 +1,210 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>养成系统调试</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-900 text-white">
+    <div class="container mx-auto p-4">
+        <h1 class="text-2xl font-bold mb-4">养成系统调试工具</h1>
+        
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div class="bg-gray-800 p-4 rounded">
+                <h2 class="text-lg font-bold mb-3">测试按钮</h2>
+                <div class="space-y-2">
+                    <button onclick="testInMainGame()" class="bg-blue-600 hover:bg-blue-700 px-4 py-2 rounded w-full">在主游戏中测试养成系统</button>
+                    <button onclick="checkElements()" class="bg-green-600 hover:bg-green-700 px-4 py-2 rounded w-full">检查HTML元素</button>
+                    <button onclick="checkFunctions()" class="bg-purple-600 hover:bg-purple-700 px-4 py-2 rounded w-full">检查JavaScript函数</button>
+                    <button onclick="simulateClick()" class="bg-yellow-600 hover:bg-yellow-700 px-4 py-2 rounded w-full">模拟点击养成按钮</button>
+                </div>
+            </div>
+            
+            <div class="bg-gray-800 p-4 rounded">
+                <h2 class="text-lg font-bold mb-3">调试信息</h2>
+                <div id="debugInfo" class="text-sm space-y-1 max-h-96 overflow-y-auto">
+                    <!-- 调试信息将在这里显示 -->
+                </div>
+            </div>
+        </div>
+        
+        <div class="mt-4">
+            <iframe id="gameFrame" src="legend-text.html" class="w-full h-96 border border-gray-600 rounded"></iframe>
+        </div>
+    </div>
+    
+    <script>
+        function log(message, type = 'info') {
+            const debugInfo = document.getElementById('debugInfo');
+            const timestamp = new Date().toLocaleTimeString();
+            const color = type === 'error' ? 'text-red-400' : type === 'success' ? 'text-green-400' : 'text-gray-300';
+            debugInfo.innerHTML += `<div class="${color}">[${timestamp}] ${message}</div>`;
+            debugInfo.scrollTop = debugInfo.scrollHeight;
+        }
+        
+        function testInMainGame() {
+            log('开始测试主游戏中的养成系统...');
+            try {
+                const iframe = document.getElementById('gameFrame');
+                const iframeDoc = iframe.contentDocument || iframe.contentWindow.document;
+                
+                // 检查游戏是否加载完成
+                if (!iframeDoc.getElementById('cultivationArea')) {
+                    log('游戏尚未完全加载，请稍后再试', 'error');
+                    return;
+                }
+                
+                // 检查showCultivationPanel函数是否存在
+                const showCultivationPanel = iframe.contentWindow.showCultivationPanel;
+                if (typeof showCultivationPanel === 'function') {
+                    log('✅ showCultivationPanel函数存在', 'success');
+                    
+                    // 尝试调用函数
+                    showCultivationPanel();
+                    
+                    // 检查养成面板是否显示
+                    const cultivationArea = iframeDoc.getElementById('cultivationArea');
+                    if (cultivationArea && !cultivationArea.classList.contains('hidden')) {
+                        log('✅ 养成面板成功显示', 'success');
+                    } else {
+                        log('❌ 养成面板未能显示', 'error');
+                    }
+                } else {
+                    log('❌ showCultivationPanel函数不存在', 'error');
+                }
+            } catch (error) {
+                log('❌ 测试过程中发生错误: ' + error.message, 'error');
+            }
+        }
+        
+        function checkElements() {
+            log('检查HTML元素...');
+            try {
+                const iframe = document.getElementById('gameFrame');
+                const iframeDoc = iframe.contentDocument || iframe.contentWindow.document;
+                
+                const elements = [
+                    'cultivationArea',
+                    'dropRateLevel',
+                    'dropRateExp',
+                    'dropRateEffect',
+                    'damageLevel',
+                    'damageExp',
+                    'damageEffect',
+                    'whipCorpseLevel',
+                    'whipCorpseExp',
+                    'whipCorpseEffect',
+                    'cultivationMaterials'
+                ];
+                
+                elements.forEach(elementId => {
+                    const element = iframeDoc.getElementById(elementId);
+                    if (element) {
+                        log(`✅ 元素 ${elementId} 存在`, 'success');
+                    } else {
+                        log(`❌ 元素 ${elementId} 不存在`, 'error');
+                    }
+                });
+            } catch (error) {
+                log('❌ 检查元素时发生错误: ' + error.message, 'error');
+            }
+        }
+        
+        function checkFunctions() {
+            log('检查JavaScript函数...');
+            try {
+                const iframe = document.getElementById('gameFrame');
+                const iframeWindow = iframe.contentWindow;
+                
+                const functions = [
+                    'showCultivationPanel',
+                    'hideCultivationPanel',
+                    'updateCultivationDisplay',
+                    'upgradeCultivation',
+                    'buyCultivationMaterial',
+                    'getUpgradeMaterials',
+                    'showUpgradeMaterials'
+                ];
+                
+                functions.forEach(funcName => {
+                    if (typeof iframeWindow[funcName] === 'function') {
+                        log(`✅ 函数 ${funcName} 存在`, 'success');
+                    } else {
+                        log(`❌ 函数 ${funcName} 不存在`, 'error');
+                    }
+                });
+                
+                // 检查gameState对象
+                if (iframeWindow.gameState) {
+                    log('✅ gameState对象存在', 'success');
+                    if (iframeWindow.gameState.player && iframeWindow.gameState.player.cultivation) {
+                        log('✅ cultivation属性存在', 'success');
+                    } else {
+                        log('❌ cultivation属性不存在', 'error');
+                    }
+                    if (iframeWindow.gameState.player && iframeWindow.gameState.player.materials) {
+                        log('✅ materials属性存在', 'success');
+                    } else {
+                        log('❌ materials属性不存在', 'error');
+                    }
+                } else {
+                    log('❌ gameState对象不存在', 'error');
+                }
+            } catch (error) {
+                log('❌ 检查函数时发生错误: ' + error.message, 'error');
+            }
+        }
+        
+        function simulateClick() {
+            log('模拟点击养成系统按钮...');
+            try {
+                const iframe = document.getElementById('gameFrame');
+                const iframeDoc = iframe.contentDocument || iframe.contentWindow.document;
+                
+                // 查找养成系统按钮
+                const buttons = iframeDoc.querySelectorAll('button');
+                let cultivationButton = null;
+                
+                buttons.forEach(button => {
+                    if (button.textContent.includes('养成系统')) {
+                        cultivationButton = button;
+                    }
+                });
+                
+                if (cultivationButton) {
+                    log('✅ 找到养成系统按钮', 'success');
+                    cultivationButton.click();
+                    log('✅ 已点击养成系统按钮', 'success');
+                    
+                    // 检查结果
+                    setTimeout(() => {
+                        const cultivationArea = iframeDoc.getElementById('cultivationArea');
+                        if (cultivationArea && !cultivationArea.classList.contains('hidden')) {
+                            log('✅ 养成面板成功显示', 'success');
+                        } else {
+                            log('❌ 养成面板未能显示', 'error');
+                        }
+                    }, 100);
+                } else {
+                    log('❌ 未找到养成系统按钮', 'error');
+                }
+            } catch (error) {
+                log('❌ 模拟点击时发生错误: ' + error.message, 'error');
+            }
+        }
+        
+        // 等待iframe加载完成
+        document.getElementById('gameFrame').onload = function() {
+            log('游戏iframe已加载完成');
+            setTimeout(() => {
+                log('开始自动检查...');
+                checkElements();
+                checkFunctions();
+            }, 1000);
+        };
+        
+        log('调试工具已启动');
+    </script>
+</body>
+</html>

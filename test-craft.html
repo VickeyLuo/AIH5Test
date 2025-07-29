@@ -1,0 +1,305 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>装备合成系统测试</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-900 text-white p-4">
+    <div class="max-w-4xl mx-auto">
+        <h1 class="text-3xl font-bold mb-6 text-center text-yellow-400">装备合成系统测试</h1>
+        
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <!-- 测试控制面板 -->
+            <div class="bg-gray-800 p-6 rounded-lg">
+                <h2 class="text-xl font-bold mb-4 text-blue-400">测试控制</h2>
+                <div class="space-y-2 mb-4">
+                    <button onclick="initTestGame()" class="w-full bg-blue-600 hover:bg-blue-700 px-4 py-2 rounded">初始化测试游戏</button>
+                    <button onclick="addTestMaterials()" class="w-full bg-green-600 hover:bg-green-700 px-4 py-2 rounded">添加测试材料</button>
+                    <button onclick="testCraftFunction()" class="w-full bg-purple-600 hover:bg-purple-700 px-4 py-2 rounded">测试合成功能</button>
+                    <button onclick="checkMaterials()" class="w-full bg-yellow-600 hover:bg-yellow-700 px-4 py-2 rounded">检查材料状态</button>
+                </div>
+                <div id="testLog" class="bg-gray-700 p-4 rounded h-64 overflow-y-auto text-sm"></div>
+            </div>
+            
+            <!-- 游戏状态显示 -->
+            <div class="bg-gray-800 p-6 rounded-lg">
+                <h2 class="text-xl font-bold mb-4 text-green-400">游戏状态</h2>
+                <div id="gameStatus" class="bg-gray-700 p-4 rounded h-64 overflow-y-auto text-sm"></div>
+                <div class="mt-4">
+                    <button onclick="openCraftPanel()" class="w-full bg-red-600 hover:bg-red-700 px-4 py-2 rounded">打开合成面板</button>
+                </div>
+            </div>
+        </div>
+        
+        <!-- 游戏iframe -->
+        <div class="bg-gray-800 p-6 rounded-lg mt-6">
+            <h2 class="text-xl font-bold mb-4 text-red-400">游戏界面</h2>
+            <iframe id="gameFrame" src="legend-text.html" class="w-full h-96 border border-gray-600 rounded"></iframe>
+        </div>
+        
+        <!-- 返回主页 -->
+        <div class="text-center mt-6">
+            <a href="legend-text.html" class="bg-yellow-600 hover:bg-yellow-700 px-6 py-3 rounded text-lg font-bold">直接进入游戏</a>
+        </div>
+    </div>
+
+    <script>
+        function log(message, type = 'info') {
+            const logDiv = document.getElementById('testLog');
+            const time = new Date().toLocaleTimeString();
+            const colorClass = type === 'error' ? 'text-red-400' : type === 'success' ? 'text-green-400' : type === 'warning' ? 'text-yellow-400' : 'text-gray-300';
+            const logEntry = `<div class="${colorClass}">[${time}] ${message}</div>`;
+            logDiv.innerHTML += logEntry;
+            logDiv.scrollTop = logDiv.scrollHeight;
+        }
+
+        function updateGameStatus() {
+            const statusDiv = document.getElementById('gameStatus');
+            try {
+                const gameFrame = document.getElementById('gameFrame');
+                const gameWindow = gameFrame.contentWindow;
+                
+                if (gameWindow.gameState && gameWindow.gameState.player) {
+                    const player = gameWindow.gameState.player;
+                    let statusHTML = '';
+                    
+                    statusHTML += `<div class="text-yellow-400 font-bold">角色信息:</div>`;
+                    statusHTML += `<div>职业: ${player.class || '未创建'}</div>`;
+                    statusHTML += `<div>等级: ${player.level || 0}</div>`;
+                    statusHTML += `<div>金币: ${player.gold || 0}</div>`;
+                    
+                    statusHTML += `<div class="text-blue-400 font-bold mt-3">材料系统:</div>`;
+                    if (player.materials && player.materials.length > 0) {
+                        player.materials.forEach(material => {
+                            statusHTML += `<div>${material.name}: ${material.count}</div>`;
+                        });
+                    } else {
+                        statusHTML += `<div class="text-gray-400">无材料</div>`;
+                    }
+                    
+                    statusHTML += `<div class="text-green-400 font-bold mt-3">背包物品:</div>`;
+                    if (player.inventory && player.inventory.length > 0) {
+                        const itemCounts = {};
+                        player.inventory.forEach(item => {
+                            itemCounts[item.name] = (itemCounts[item.name] || 0) + 1;
+                        });
+                        Object.entries(itemCounts).forEach(([name, count]) => {
+                            statusHTML += `<div>${name}: ${count}</div>`;
+                        });
+                    } else {
+                        statusHTML += `<div class="text-gray-400">背包为空</div>`;
+                    }
+                    
+                    statusDiv.innerHTML = statusHTML;
+                } else {
+                    statusDiv.innerHTML = '<div class="text-red-400">游戏未初始化</div>';
+                }
+            } catch (error) {
+                statusDiv.innerHTML = `<div class="text-red-400">无法获取游戏状态: ${error.message}</div>`;
+            }
+        }
+
+        function initTestGame() {
+            log('初始化测试游戏...');
+            try {
+                const gameFrame = document.getElementById('gameFrame');
+                const gameWindow = gameFrame.contentWindow;
+                
+                // 创建测试角色
+                if (gameWindow.gameState) {
+                    gameWindow.gameState.player.class = 'warrior';
+                    gameWindow.gameState.player.level = 10;
+                    gameWindow.gameState.player.gold = 5000;
+                    gameWindow.gameState.player.hp = 200;
+                    gameWindow.gameState.player.maxHp = 200;
+                    gameWindow.gameState.player.mp = 50;
+                    gameWindow.gameState.player.maxMp = 50;
+                    
+                    // 确保材料系统初始化
+                    if (!gameWindow.gameState.player.materials) {
+                        gameWindow.gameState.player.materials = [];
+                    }
+                    
+                    // 显示游戏界面
+                    if (gameWindow.document.getElementById('characterCreation')) {
+                        gameWindow.document.getElementById('characterCreation').classList.add('hidden');
+                    }
+                    if (gameWindow.document.getElementById('gameInterface')) {
+                        gameWindow.document.getElementById('gameInterface').classList.remove('hidden');
+                    }
+                    
+                    // 更新UI
+                    if (gameWindow.updateUI) {
+                        gameWindow.updateUI();
+                    }
+                    
+                    log('✅ 测试游戏初始化成功', 'success');
+                } else {
+                    log('❌ 游戏状态未找到', 'error');
+                }
+            } catch (error) {
+                log(`❌ 初始化失败: ${error.message}`, 'error');
+            }
+            updateGameStatus();
+        }
+
+        function addTestMaterials() {
+            log('添加测试材料...');
+            try {
+                const gameFrame = document.getElementById('gameFrame');
+                const gameWindow = gameFrame.contentWindow;
+                
+                if (gameWindow.gameState && gameWindow.gameState.player) {
+                    const player = gameWindow.gameState.player;
+                    
+                    // 添加合成所需的测试材料
+                    const testMaterials = [
+                        { name: '铁矿石', count: 10 },
+                        { name: '银矿石', count: 8 },
+                        { name: '黄金矿石', count: 5 },
+                        { name: '魔法水晶', count: 6 },
+                        { name: '暗影精华', count: 4 },
+                        { name: '神圣宝石', count: 3 },
+                        { name: '龙鳞片', count: 2 }
+                    ];
+                    
+                    testMaterials.forEach(material => {
+                        const existing = player.materials.find(m => m.name === material.name);
+                        if (existing) {
+                            existing.count += material.count;
+                            log(`✅ 增加 ${material.name} x${material.count}`, 'success');
+                        } else {
+                            player.materials.push({...material});
+                            log(`✅ 添加 ${material.name} x${material.count}`, 'success');
+                        }
+                    });
+                    
+                    // 更新UI
+                    if (gameWindow.updateUI) {
+                        gameWindow.updateUI();
+                    }
+                    if (gameWindow.updateCultivationDisplay) {
+                        gameWindow.updateCultivationDisplay();
+                    }
+                    
+                    log('✅ 测试材料添加完成', 'success');
+                } else {
+                    log('❌ 游戏状态未找到', 'error');
+                }
+            } catch (error) {
+                log(`❌ 添加材料失败: ${error.message}`, 'error');
+            }
+            updateGameStatus();
+        }
+
+        function testCraftFunction() {
+            log('测试合成功能...');
+            try {
+                const gameFrame = document.getElementById('gameFrame');
+                const gameWindow = gameFrame.contentWindow;
+                
+                if (gameWindow.getPlayerMaterialCount) {
+                    // 测试材料计数函数
+                    const ironCount = gameWindow.getPlayerMaterialCount('铁矿石');
+                    const silverCount = gameWindow.getPlayerMaterialCount('银矿石');
+                    
+                    log(`✅ 铁矿石数量: ${ironCount}`, 'success');
+                    log(`✅ 银矿石数量: ${silverCount}`, 'success');
+                    
+                    // 测试合成配方检查
+                    if (gameWindow.craftingRecipes) {
+                        const recipes = Object.keys(gameWindow.craftingRecipes);
+                        log(`✅ 找到 ${recipes.length} 个合成配方`, 'success');
+                        log(`配方: ${recipes.slice(0, 3).join(', ')}...`, 'info');
+                    }
+                    
+                    log('✅ 合成功能测试完成', 'success');
+                } else {
+                    log('❌ 合成函数未找到', 'error');
+                }
+            } catch (error) {
+                log(`❌ 测试失败: ${error.message}`, 'error');
+            }
+        }
+
+        function checkMaterials() {
+            log('检查材料状态...');
+            try {
+                const gameFrame = document.getElementById('gameFrame');
+                const gameWindow = gameFrame.contentWindow;
+                
+                if (gameWindow.gameState && gameWindow.gameState.player) {
+                    const player = gameWindow.gameState.player;
+                    
+                    log('=== 材料系统状态 ===', 'info');
+                    if (player.materials && player.materials.length > 0) {
+                        player.materials.forEach(material => {
+                            log(`${material.name}: ${material.count}`, 'success');
+                        });
+                    } else {
+                        log('材料系统为空', 'warning');
+                    }
+                    
+                    log('=== 背包物品状态 ===', 'info');
+                    if (player.inventory && player.inventory.length > 0) {
+                        const itemCounts = {};
+                        player.inventory.forEach(item => {
+                            itemCounts[item.name] = (itemCounts[item.name] || 0) + 1;
+                        });
+                        Object.entries(itemCounts).forEach(([name, count]) => {
+                            log(`${name}: ${count}`, 'success');
+                        });
+                    } else {
+                        log('背包为空', 'warning');
+                    }
+                    
+                    // 测试材料计数函数
+                    if (gameWindow.getPlayerMaterialCount) {
+                        log('=== 材料计数测试 ===', 'info');
+                        const testItems = ['铁矿石', '银矿石', '魔法水晶'];
+                        testItems.forEach(item => {
+                            const count = gameWindow.getPlayerMaterialCount(item);
+                            log(`${item}: ${count}`, count > 0 ? 'success' : 'warning');
+                        });
+                    }
+                } else {
+                    log('❌ 游戏状态未找到', 'error');
+                }
+            } catch (error) {
+                log(`❌ 检查失败: ${error.message}`, 'error');
+            }
+            updateGameStatus();
+        }
+
+        function openCraftPanel() {
+            try {
+                const gameFrame = document.getElementById('gameFrame');
+                const gameWindow = gameFrame.contentWindow;
+                
+                if (gameWindow.showCraftPanel) {
+                    gameWindow.showCraftPanel();
+                    log('✅ 已打开合成面板', 'success');
+                } else {
+                    log('❌ 合成面板函数未找到', 'error');
+                }
+            } catch (error) {
+                log(`❌ 打开合成面板失败: ${error.message}`, 'error');
+            }
+        }
+
+        // 定期更新游戏状态
+        setInterval(updateGameStatus, 2000);
+        
+        // 页面加载完成后初始化
+        window.onload = function() {
+            log('装备合成测试页面已加载');
+            setTimeout(() => {
+                log('等待游戏加载完成...');
+                updateGameStatus();
+            }, 2000);
+        };
+    </script>
+</body>
+</html>
