@@ -1,0 +1,1132 @@
+{
+  "type": "equipment",
+  "version": "2.0.0",
+  "timestamp": "2024-12-19T10:30:00.000Z",
+  "data": {
+    "weapons": [
+      {
+        "id": 1,
+        "name": "木剑",
+        "type": "weapon",
+        "rarity": "common",
+        "price": 50,
+        "attack": "5,10",
+        "critRate": 0,
+        "critDamage": 0,
+        "requirements": {
+          "level": 1,
+          "class": "all"
+        },
+        "description": "最基础的武器"
+      },
+      {
+        "id": 2,
+        "name": "铁剑",
+        "type": "weapon",
+        "rarity": "common",
+        "price": 150,
+        "attack": "10,18",
+        "critRate": 2,
+        "critDamage": 10,
+        "requirements": {
+          "level": 3,
+          "class": "all"
+        },
+        "description": "坚固的铁制武器"
+      },
+      {
+        "id": 3,
+        "name": "银剑",
+        "type": "weapon",
+        "rarity": "rare",
+        "price": 300,
+        "attack": "15,25",
+        "critRate": 3,
+        "critDamage": 15,
+        "requirements": {
+          "level": 8,
+          "class": "all"
+        },
+        "description": "闪闪发光的银制武器"
+      },
+      {
+        "id": 4,
+        "name": "黄金剑",
+        "type": "weapon",
+        "rarity": "epic",
+        "price": 600,
+        "attack": "20,35",
+        "critRate": 5,
+        "critDamage": 25,
+        "requirements": {
+          "level": 12,
+          "class": "all"
+        },
+        "description": "华丽的黄金武器"
+      },
+      {
+        "id": 5,
+        "name": "屠龙刀",
+        "type": "weapon",
+        "rarity": "legendary",
+        "price": 1500,
+        "attack": "30,50",
+        "critRate": 8,
+        "critDamage": 40,
+        "requirements": {
+          "level": 18,
+          "class": "all"
+        },
+        "description": "传说中的屠龙神兵"
+      },
+      {
+        "id": 6,
+        "name": "法师之杖",
+        "type": "weapon",
+        "rarity": "rare",
+        "price": 400,
+        "attack": "8,15",
+        "critRate": 6,
+        "critDamage": 30,
+        "magicPower": 20,
+        "requirements": {
+          "level": 6,
+          "class": "mage"
+        },
+        "description": "增强魔法力量的法杖"
+      },
+      {
+        "id": 7,
+        "name": "道士法杖",
+        "type": "weapon",
+        "rarity": "rare",
+        "price": 350,
+        "attack": "10,18",
+        "critRate": 4,
+        "critDamage": 20,
+        "magicPower": 15,
+        "requirements": {
+          "level": 6,
+          "class": "taoist"
+        },
+        "description": "道士专用的法杖"
+      },
+      {
+        "id": 8,
+        "name": "天神之剑",
+        "type": "weapon",
+        "rarity": "mythic",
+        "price": 5000,
+        "attack": "45,75",
+        "critRate": 15,
+        "critDamage": 60,
+        "setName": "天神套装",
+        "requirements": {
+          "level": 25,
+          "class": "all"
+        },
+        "description": "天神赐予的神圣武器"
+      },
+      {
+        "id": 9,
+        "name": "深渊魔刃",
+        "type": "weapon",
+        "rarity": "mythic",
+        "price": 6000,
+        "attack": "50,80",
+        "critRate": 12,
+        "critDamage": 80,
+        "vampiric": 15,
+        "setName": "深渊套装",
+        "requirements": {
+          "level": 28,
+          "class": "all"
+        },
+        "description": "来自深渊的邪恶武器"
+      },
+      {
+        "id": 10,
+        "name": "创世法杖",
+        "type": "weapon",
+        "rarity": "mythic",
+        "price": 5500,
+        "attack": "35,60",
+        "critRate": 20,
+        "critDamage": 70,
+        "magicPower": 50,
+        "setName": "创世套装",
+        "requirements": {
+          "level": 26,
+          "class": "mage"
+        },
+        "description": "创世之力凝聚的法杖"
+      },
+      {
+        "id": 11,
+        "name": "永恒道杖",
+        "type": "weapon",
+        "rarity": "mythic",
+        "price": 5200,
+        "attack": "40,65",
+        "critRate": 18,
+        "critDamage": 65,
+        "magicPower": 40,
+        "setName": "永恒套装",
+        "requirements": {
+          "level": 26,
+          "class": "taoist"
+        },
+        "description": "永恒力量的化身"
+      },
+      {
+        "id": 12,
+        "name": "混沌之刃",
+        "type": "weapon",
+        "rarity": "supreme",
+        "price": 15000,
+        "attack": "70,120",
+        "critRate": 25,
+        "critDamage": 100,
+        "chaosStrike": 20,
+        "setName": "混沌套装",
+        "requirements": {
+          "level": 35,
+          "class": "all"
+        },
+        "description": "混沌力量的终极体现"
+      },
+      {
+        "id": 13,
+        "name": "虚空法杖",
+        "type": "weapon",
+        "rarity": "supreme",
+        "price": 14000,
+        "attack": "60,100",
+        "critRate": 30,
+        "critDamage": 90,
+        "magicPower": 80,
+        "voidPower": 30,
+        "setName": "虚空套装",
+        "requirements": {
+          "level": 38,
+          "class": "mage"
+        },
+        "description": "虚空之力的凝聚"
+      },
+      {
+        "id": 14,
+        "name": "龙神之剑",
+        "type": "weapon",
+        "rarity": "transcendent",
+        "price": 30000,
+        "attack": "120,200",
+        "critRate": 35,
+        "critDamage": 150,
+        "dragonPower": 50,
+        "setName": "龙神套装",
+        "requirements": {
+          "level": 45,
+          "class": "all"
+        },
+        "description": "龙神的专属武器"
+      },
+      {
+        "id": 15,
+        "name": "神域圣剑",
+        "type": "weapon",
+        "rarity": "transcendent",
+        "price": 32000,
+        "attack": "100,180",
+        "critRate": 40,
+        "critDamage": 140,
+        "setName": "神域套装",
+        "requirements": {
+          "level": 47,
+          "class": "all"
+        },
+        "description": "神域的圣洁之剑"
+      },
+      {
+        "id": 16,
+        "name": "无限之刃",
+        "type": "weapon",
+        "rarity": "transcendent",
+        "price": 50000,
+        "attack": "150,250",
+        "critRate": 45,
+        "critDamage": 200,
+        "setName": "无限套装",
+        "requirements": {
+          "level": 50,
+          "class": "all"
+        },
+        "description": "无限力量的终极武器"
+      },
+      {
+        "id": 17,
+        "name": "创世神杖",
+        "type": "weapon",
+        "rarity": "transcendent",
+        "price": 45000,
+        "attack": "80,150",
+        "critRate": 50,
+        "critDamage": 180,
+        "magicPower": 120,
+        "setName": "创世神套装",
+        "requirements": {
+          "level": 48,
+          "class": "mage"
+        },
+        "description": "创世神的终极法杖"
+      }
+    ],
+    "armors": [
+      {
+        "id": 101,
+        "name": "布衣",
+        "type": "armor",
+        "rarity": "common",
+        "price": 30,
+        "defense": 2,
+        "hp": 0,
+        "mp": 0,
+        "requirements": {
+          "level": 1,
+          "class": "all"
+        },
+        "description": "最基础的防具"
+      },
+      {
+        "id": 102,
+        "name": "皮甲",
+        "type": "armor",
+        "rarity": "common",
+        "price": 100,
+        "defense": 5,
+        "hp": 10,
+        "mp": 0,
+        "requirements": {
+          "level": 2,
+          "class": "all"
+        },
+        "description": "轻便的皮制防具"
+      },
+      {
+        "id": 103,
+        "name": "铁甲",
+        "type": "armor",
+        "rarity": "rare",
+        "price": 250,
+        "defense": 8,
+        "hp": 20,
+        "mp": 0,
+        "critRate": 1,
+        "requirements": {
+          "level": 5,
+          "class": "all"
+        },
+        "description": "坚固的铁制防具"
+      },
+      {
+        "id": 104,
+        "name": "银甲",
+        "type": "armor",
+        "rarity": "epic",
+        "price": 500,
+        "defense": 12,
+        "hp": 30,
+        "mp": 10,
+        "critRate": 2,
+        "requirements": {
+          "level": 10,
+          "class": "all"
+        },
+        "description": "精美的银制防具"
+      },
+      {
+        "id": 105,
+        "name": "龙鳞甲",
+        "type": "armor",
+        "rarity": "legendary",
+        "price": 1200,
+        "defense": 20,
+        "hp": 50,
+        "mp": 20,
+        "critRate": 4,
+        "critDamage": 15,
+        "requirements": {
+          "level": 18,
+          "class": "all"
+        },
+        "description": "用龙鳞制作的传说防具"
+      },
+      {
+        "id": 106,
+        "name": "法师长袍",
+        "type": "armor",
+        "rarity": "rare",
+        "price": 300,
+        "defense": 6,
+        "hp": 15,
+        "mp": 40,
+        "magicPower": 25,
+        "requirements": {
+          "level": 6,
+          "class": "mage"
+        },
+        "description": "增强魔法力量的长袍"
+      },
+      {
+        "id": 107,
+        "name": "道士袍",
+        "type": "armor",
+        "rarity": "rare",
+        "price": 280,
+        "defense": 8,
+        "hp": 25,
+        "mp": 30,
+        "magicPower": 15,
+        "requirements": {
+          "level": 6,
+          "class": "taoist"
+        },
+        "description": "道士专用的法袍"
+      },
+      {
+        "id": 108,
+        "name": "天神战甲",
+        "type": "armor",
+        "rarity": "mythic",
+        "price": 4500,
+        "defense": 35,
+        "hp": 100,
+        "mp": 50,
+        "critRate": 8,
+        "critDamage": 25,
+        "setName": "天神套装",
+        "requirements": {
+          "level": 25,
+          "class": "all"
+        },
+        "description": "天神赐予的神圣战甲"
+      },
+      {
+        "id": 109,
+        "name": "深渊魔甲",
+        "type": "armor",
+        "rarity": "mythic",
+        "price": 5000,
+        "defense": 40,
+        "hp": 120,
+        "mp": 40,
+        "vampiric": 10,
+        "damageReduction": 15,
+        "setName": "深渊套装",
+        "requirements": {
+          "level": 28,
+          "class": "all"
+        },
+        "description": "深渊恶魔的邪恶铠甲"
+      },
+      {
+        "id": 110,
+        "name": "创世法袍",
+        "type": "armor",
+        "rarity": "mythic",
+        "price": 4800,
+        "defense": 25,
+        "hp": 80,
+        "mp": 150,
+        "magicPower": 60,
+        "spellVamp": 20,
+        "setName": "创世套装",
+        "requirements": {
+          "level": 26,
+          "class": "mage"
+        },
+        "description": "创世之力编织的法袍"
+      },
+      {
+        "id": 111,
+        "name": "永恒道袍",
+        "type": "armor",
+        "rarity": "mythic",
+        "price": 4600,
+        "defense": 30,
+        "hp": 100,
+        "mp": 120,
+        "magicPower": 45,
+        "setName": "永恒套装",
+        "requirements": {
+          "level": 26,
+          "class": "taoist"
+        },
+        "description": "永恒力量守护的道袍"
+      },
+      {
+        "id": 112,
+        "name": "混沌战甲",
+        "type": "armor",
+        "rarity": "supreme",
+        "price": 12000,
+        "defense": 60,
+        "hp": 200,
+        "mp": 80,
+        "critRate": 15,
+        "chaosShield": 25,
+        "setName": "混沌套装",
+        "requirements": {
+          "level": 35,
+          "class": "all"
+        },
+        "description": "混沌力量锻造的终极战甲"
+       }
+     ],
+     "helmets": [
+       {
+         "id": 201,
+         "name": "布帽",
+         "type": "helmet",
+         "rarity": "common",
+         "price": 20,
+         "defense": 1,
+         "hp": 0,
+         "mp": 0,
+         "requirements": {
+           "level": 1,
+           "class": "all"
+         },
+         "description": "简单的布制帽子"
+       },
+       {
+         "id": 202,
+         "name": "皮帽",
+         "type": "helmet",
+         "rarity": "common",
+         "price": 80,
+         "defense": 3,
+         "hp": 5,
+         "mp": 0,
+         "requirements": {
+           "level": 2,
+           "class": "all"
+         },
+         "description": "皮制头盔"
+       },
+       {
+         "id": 203,
+         "name": "铁盔",
+         "type": "helmet",
+         "rarity": "rare",
+         "price": 200,
+         "defense": 6,
+         "hp": 15,
+         "mp": 0,
+         "critRate": 1,
+         "requirements": {
+           "level": 4,
+           "class": "all"
+         },
+         "description": "坚固的铁制头盔"
+       },
+       {
+         "id": 204,
+         "name": "银盔",
+         "type": "helmet",
+         "rarity": "epic",
+         "price": 400,
+         "defense": 10,
+         "hp": 25,
+         "mp": 15,
+         "critRate": 3,
+         "requirements": {
+           "level": 10,
+           "class": "all"
+         },
+         "description": "精美的银制头盔"
+       },
+       {
+         "id": 205,
+         "name": "龙鳞盔",
+         "type": "helmet",
+         "rarity": "legendary",
+         "price": 1000,
+         "defense": 15,
+         "hp": 40,
+         "mp": 20,
+         "critRate": 5,
+         "critDamage": 10,
+         "requirements": {
+           "level": 18,
+           "class": "all"
+         },
+         "description": "龙鳞制作的传说头盔"
+       },
+       {
+         "id": 206,
+         "name": "法师帽",
+         "type": "helmet",
+         "rarity": "rare",
+         "price": 250,
+         "defense": 4,
+         "hp": 10,
+         "mp": 30,
+         "magicPower": 20,
+         "requirements": {
+           "level": 6,
+           "class": "mage"
+         },
+         "description": "增强魔法力量的帽子"
+       },
+       {
+         "id": 207,
+         "name": "道士冠",
+         "type": "helmet",
+         "rarity": "rare",
+         "price": 230,
+         "defense": 6,
+         "hp": 20,
+         "mp": 25,
+         "magicPower": 12,
+         "requirements": {
+           "level": 6,
+           "class": "taoist"
+         },
+         "description": "道士专用的法冠"
+       },
+       {
+         "id": 208,
+         "name": "天神头盔",
+         "type": "helmet",
+         "rarity": "mythic",
+         "price": 3500,
+         "defense": 25,
+         "hp": 80,
+         "mp": 40,
+         "critRate": 10,
+         "critDamage": 20,
+         "setName": "天神套装",
+         "requirements": {
+           "level": 25,
+           "class": "all"
+         },
+         "description": "天神赐予的神圣头盔"
+       },
+       {
+         "id": 209,
+         "name": "深渊魔盔",
+         "type": "helmet",
+         "rarity": "mythic",
+         "price": 4000,
+         "defense": 30,
+         "hp": 100,
+         "mp": 30,
+         "vampiric": 8,
+         "damageReduction": 10,
+         "setName": "深渊套装",
+         "requirements": {
+           "level": 28,
+           "class": "all"
+         },
+         "description": "深渊恶魔的邪恶头盔"
+       },
+       {
+         "id": 210,
+         "name": "混沌头盔",
+         "type": "helmet",
+         "rarity": "supreme",
+         "price": 10000,
+         "defense": 45,
+         "hp": 150,
+         "mp": 60,
+         "critRate": 12,
+         "chaosShield": 20,
+         "setName": "混沌套装",
+         "requirements": {
+           "level": 35,
+           "class": "all"
+         },
+         "description": "混沌力量锻造的终极头盔"
+       }
+     ],
+     "boots": [
+       {
+         "id": 301,
+         "name": "布鞋",
+         "type": "boots",
+         "rarity": "common",
+         "price": 15,
+         "defense": 1,
+         "hp": 0,
+         "mp": 0,
+         "requirements": {
+           "level": 1,
+           "class": "all"
+         },
+         "description": "简单的布鞋"
+       },
+       {
+         "id": 302,
+         "name": "皮靴",
+         "type": "boots",
+         "rarity": "common",
+         "price": 60,
+         "defense": 2,
+         "hp": 5,
+         "mp": 0,
+         "requirements": {
+           "level": 2,
+           "class": "all"
+         },
+         "description": "舒适的皮靴"
+       },
+       {
+         "id": 303,
+         "name": "铁靴",
+         "type": "boots",
+         "rarity": "rare",
+         "price": 180,
+         "defense": 5,
+         "hp": 12,
+         "mp": 0,
+         "critRate": 1,
+         "requirements": {
+           "level": 4,
+           "class": "all"
+         },
+         "description": "坚固的铁制靴子"
+       },
+       {
+         "id": 304,
+         "name": "银靴",
+         "type": "boots",
+         "rarity": "epic",
+         "price": 350,
+         "defense": 8,
+         "hp": 20,
+         "mp": 10,
+         "critRate": 2,
+         "requirements": {
+           "level": 10,
+           "class": "all"
+         },
+         "description": "精美的银制靴子"
+       },
+       {
+         "id": 305,
+         "name": "龙鳞靴",
+         "type": "boots",
+         "rarity": "legendary",
+         "price": 800,
+         "defense": 12,
+         "hp": 35,
+         "mp": 15,
+         "critRate": 4,
+         "critDamage": 8,
+         "requirements": {
+           "level": 18,
+           "class": "all"
+         },
+         "description": "龙鳞制作的传说靴子"
+       },
+       {
+         "id": 306,
+         "name": "法师靴",
+         "type": "boots",
+         "rarity": "rare",
+         "price": 200,
+         "defense": 3,
+         "hp": 8,
+         "mp": 25,
+         "magicPower": 15,
+         "requirements": {
+           "level": 6,
+           "class": "mage"
+         },
+         "description": "增强魔法力量的靴子"
+       },
+       {
+         "id": 307,
+         "name": "道士靴",
+         "type": "boots",
+         "rarity": "rare",
+         "price": 180,
+         "defense": 5,
+         "hp": 15,
+         "mp": 20,
+         "magicPower": 10,
+         "requirements": {
+           "level": 6,
+           "class": "taoist"
+         },
+         "description": "道士专用的靴子"
+       },
+       {
+         "id": 308,
+         "name": "天神战靴",
+         "type": "boots",
+         "rarity": "mythic",
+         "price": 3000,
+         "defense": 20,
+         "hp": 60,
+         "mp": 30,
+         "critRate": 8,
+         "critDamage": 15,
+         "setName": "天神套装",
+         "requirements": {
+           "level": 25,
+           "class": "all"
+         },
+         "description": "天神赐予的神圣战靴"
+       },
+       {
+         "id": 309,
+         "name": "深渊魔靴",
+         "type": "boots",
+         "rarity": "mythic",
+         "price": 3500,
+         "defense": 25,
+         "hp": 80,
+         "mp": 25,
+         "vampiric": 6,
+         "damageReduction": 8,
+         "setName": "深渊套装",
+         "requirements": {
+           "level": 28,
+           "class": "all"
+         },
+         "description": "深渊恶魔的邪恶战靴"
+       },
+       {
+         "id": 310,
+         "name": "混沌战靴",
+         "type": "boots",
+         "rarity": "supreme",
+         "price": 8000,
+         "defense": 35,
+         "hp": 120,
+         "mp": 50,
+         "critRate": 10,
+         "chaosShield": 15,
+         "setName": "混沌套装",
+         "requirements": {
+           "level": 35,
+           "class": "all"
+         },
+         "description": "混沌力量锻造的终极战靴"
+       }
+     ],
+     "accessories": [
+       {
+         "id": 401,
+         "name": "力量戒指",
+         "type": "ring",
+         "rarity": "rare",
+         "price": 200,
+         "attack": [2, 5],
+         "critRate": 3,
+         "requirements": {
+           "level": 5,
+           "class": "all"
+         },
+         "description": "增加力量的戒指"
+       },
+       {
+         "id": 402,
+         "name": "敏捷戒指",
+         "type": "ring",
+         "rarity": "rare",
+         "price": 250,
+         "critRate": 8,
+         "critDamage": 15,
+         "requirements": {
+           "level": 8,
+           "class": "all"
+         },
+         "description": "增加敏捷的戒指"
+       },
+       {
+         "id": 403,
+         "name": "智慧戒指",
+         "type": "ring",
+         "rarity": "epic",
+         "price": 400,
+         "magicPower": 30,
+         "mp": 50,
+         "requirements": {
+           "level": 12,
+           "class": "mage"
+         },
+         "description": "增加智慧的戒指"
+       },
+       {
+         "id": 404,
+         "name": "生命项链",
+         "type": "necklace",
+         "rarity": "epic",
+         "price": 300,
+         "hp": 40,
+         "defense": 3,
+         "requirements": {
+           "level": 6,
+           "class": "all"
+         },
+         "description": "增加生命值的项链"
+       },
+       {
+         "id": 405,
+         "name": "魔法项链",
+         "type": "necklace",
+         "rarity": "epic",
+         "price": 350,
+         "mp": 60,
+         "magicPower": 25,
+         "requirements": {
+           "level": 8,
+           "class": "mage"
+         },
+         "description": "增加魔法值的项链"
+       },
+       {
+         "id": 406,
+         "name": "龙心项链",
+         "type": "necklace",
+         "rarity": "legendary",
+         "price": 1200,
+         "hp": 80,
+         "attack": [5, 10],
+         "critRate": 6,
+         "requirements": {
+           "level": 15,
+           "class": "all"
+         },
+         "description": "蕴含龙心力量的项链"
+       }
+     ],
+     "potions": [
+       {
+         "id": 501,
+         "name": "小型生命药水",
+         "type": "potion",
+         "rarity": "common",
+         "price": 10,
+         "requirements": {
+           "level": 1,
+           "class": "all"
+         },
+         "description": "恢复50点生命值"
+       },
+       {
+         "id": 502,
+         "name": "中型生命药水",
+         "type": "potion",
+         "rarity": "common",
+         "price": 25,
+         "requirements": {
+           "level": 5,
+           "class": "all"
+         },
+         "description": "恢复150点生命值"
+       },
+       {
+         "id": 503,
+         "name": "大型生命药水",
+         "type": "potion",
+         "rarity": "rare",
+         "price": 50,
+         "requirements": {
+           "level": 10,
+           "class": "all"
+         },
+         "description": "恢复300点生命值"
+       },
+       {
+         "id": 504,
+         "name": "小型魔法药水",
+         "type": "potion",
+         "rarity": "common",
+         "price": 15,
+         "requirements": {
+           "level": 1,
+           "class": "all"
+         },
+         "description": "恢复30点魔法值"
+       },
+       {
+         "id": 505,
+         "name": "中型魔法药水",
+         "type": "potion",
+         "rarity": "common",
+         "price": 35,
+         "requirements": {
+           "level": 5,
+           "class": "all"
+         },
+         "description": "恢复100点魔法值"
+       },
+       {
+         "id": 506,
+         "name": "大型魔法药水",
+         "type": "potion",
+         "rarity": "rare",
+         "price": 70,
+         "requirements": {
+           "level": 10,
+           "class": "all"
+         },
+         "description": "恢复200点魔法值"
+       }
+     ],
+     "materials": [
+       {
+         "id": 601,
+         "name": "铁矿石",
+         "type": "material",
+         "rarity": "common",
+         "price": 5,
+         "requirements": {
+           "level": 1,
+           "class": "all"
+         },
+         "description": "基础的锻造材料"
+       },
+       {
+         "id": 602,
+         "name": "银矿石",
+         "type": "material",
+         "rarity": "rare",
+         "price": 15,
+         "requirements": {
+           "level": 5,
+           "class": "all"
+         },
+         "description": "稀有的锻造材料"
+       },
+       {
+         "id": 603,
+         "name": "黄金矿石",
+         "type": "material",
+         "rarity": "epic",
+         "price": 50,
+         "requirements": {
+           "level": 10,
+           "class": "all"
+         },
+         "description": "珍贵的锻造材料"
+       },
+       {
+         "id": 604,
+         "name": "龙鳞片",
+         "type": "material",
+         "rarity": "legendary",
+         "price": 200,
+         "requirements": {
+           "level": 15,
+           "class": "all"
+         },
+         "description": "传说级的锻造材料"
+       },
+       {
+         "id": 605,
+         "name": "神石碎片",
+         "type": "material",
+         "rarity": "mythic",
+         "price": 1000,
+         "requirements": {
+           "level": 25,
+           "class": "all"
+         },
+         "description": "神话级的锻造材料"
+       }
+     ],
+     "specialEquipment": [
+       {
+         "id": 701,
+         "name": "生命护符",
+         "type": "special",
+         "tier": 1,
+         "rarity": "rare",
+         "price": 500,
+         "percentHp": 15,
+         "requirements": {
+           "level": 3,
+           "class": "all"
+         },
+         "description": "增加15%生命值"
+       },
+       {
+         "id": 702,
+         "name": "力量护符",
+         "type": "special",
+         "tier": 1,
+         "rarity": "rare",
+         "price": 500,
+         "percentDamage": 10,
+         "requirements": {
+           "level": 3,
+           "class": "all"
+         },
+         "description": "增加10%伤害"
+       },
+       {
+         "id": 703,
+         "name": "攻击护符",
+         "type": "special",
+         "tier": 1,
+         "rarity": "rare",
+         "price": 500,
+         "percentAttack": 12,
+         "requirements": {
+           "level": 3,
+           "class": "all"
+         },
+         "description": "增加12%攻击力"
+       },
+       {
+         "id": 704,
+         "name": "神力护符",
+         "type": "special",
+         "tier": 3,
+         "rarity": "legendary",
+         "price": 3000,
+         "percentDamage": 35,
+         "divineMultiplier": 2,
+         "requirements": {
+           "level": 15,
+           "class": "all"
+         },
+         "description": "增加35%伤害，神力倍攻x2"
+       },
+       {
+         "id": 705,
+         "name": "至尊护符",
+         "type": "special",
+         "tier": 5,
+         "rarity": "supreme",
+         "price": 15000,
+         "percentDamage": 80,
+         "supremeMultiplier": 5,
+         "requirements": {
+           "level": 35,
+           "class": "all"
+         },
+         "description": "增加80%伤害，至尊倍攻x5"
+       },
+       {
+         "id": 706,
+         "name": "超神护符",
+         "type": "special",
+         "tier": 6,
+         "rarity": "transcendent",
+         "price": 50000,
+         "percentDamage": 150,
+         "transcendentMultiplier": 10,
+         "requirements": {
+           "level": 45,
+           "class": "all"
+         },
+         "description": "增加150%伤害，超神倍攻x10"
+       }
+     ]
+  }
+}

@@ -1,0 +1,306 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>部署状态检查 - 传奇文字游戏</title>
+    <style>
+        body {
+            font-family: 'Microsoft YaHei', sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .status-item {
+            display: flex;
+            align-items: center;
+            margin: 15px 0;
+            padding: 15px;
+            border-radius: 5px;
+            border-left: 4px solid #ddd;
+        }
+        .status-success {
+            background: #d4edda;
+            border-left-color: #28a745;
+            color: #155724;
+        }
+        .status-warning {
+            background: #fff3cd;
+            border-left-color: #ffc107;
+            color: #856404;
+        }
+        .status-error {
+            background: #f8d7da;
+            border-left-color: #dc3545;
+            color: #721c24;
+        }
+        .status-icon {
+            font-size: 20px;
+            margin-right: 10px;
+        }
+        .check-button {
+            background: #007bff;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+            margin: 10px 5px;
+        }
+        .check-button:hover {
+            background: #0056b3;
+        }
+        .info-box {
+            background: #e7f3ff;
+            border: 1px solid #b3d9ff;
+            padding: 15px;
+            border-radius: 5px;
+            margin: 20px 0;
+        }
+        .deployment-info {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 5px;
+            margin: 20px 0;
+            border: 1px solid #dee2e6;
+        }
+        .code {
+            background: #f1f1f1;
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-family: monospace;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🚀 Vercel部署状态检查</h1>
+        
+        <div class="info-box">
+            <strong>📋 检查清单：</strong>
+            <p>此页面将帮助你验证游戏是否已成功部署到Vercel，并检查所有功能是否正常工作。</p>
+        </div>
+        
+        <div class="deployment-info">
+            <h3>🌐 当前访问信息</h3>
+            <p><strong>访问地址：</strong> <span class="code" id="currentUrl"></span></p>
+            <p><strong>部署平台：</strong> <span id="platform"></span></p>
+            <p><strong>运行模式：</strong> <span id="mode"></span></p>
+        </div>
+        
+        <h3>🔍 自动检查</h3>
+        <button class="check-button" onclick="runAllChecks()">开始检查</button>
+        <button class="check-button" onclick="location.reload()">重新检查</button>
+        
+        <div id="checkResults">
+            <div class="status-item" id="urlCheck">
+                <span class="status-icon">⏳</span>
+                <span>检查访问地址...</span>
+            </div>
+            <div class="status-item" id="filesCheck">
+                <span class="status-icon">⏳</span>
+                <span>检查游戏文件...</span>
+            </div>
+            <div class="status-item" id="configCheck">
+                <span class="status-icon">⏳</span>
+                <span>检查配置文件...</span>
+            </div>
+            <div class="status-item" id="gameCheck">
+                <span class="status-icon">⏳</span>
+                <span>检查游戏功能...</span>
+            </div>
+            <div class="status-item" id="mobileCheck">
+                <span class="status-icon">⏳</span>
+                <span>检查移动端适配...</span>
+            </div>
+        </div>
+        
+        <div class="info-box" id="deploymentGuide" style="display: none;">
+            <h3>📖 部署指南</h3>
+            <p>如果检查发现问题，请参考以下解决方案：</p>
+            <ul>
+                <li><strong>文件缺失：</strong> 确保所有游戏文件都已上传到Vercel</li>
+                <li><strong>配置错误：</strong> 检查 <span class="code">vercel.json</span> 和 <span class="code">package.json</span> 文件</li>
+                <li><strong>访问问题：</strong> 确认域名设置正确，DNS解析正常</li>
+                <li><strong>功能异常：</strong> 查看浏览器控制台错误信息</li>
+            </ul>
+        </div>
+        
+        <div class="info-box">
+            <h3>🎮 快速访问</h3>
+            <p>
+                <a href="./legend-text.html" target="_blank" style="margin-right: 15px;">🎯 打开游戏</a>
+                <a href="./" target="_blank" style="margin-right: 15px;">🏠 首页</a>
+                <a href="https://vercel.com" target="_blank">⚙️ Vercel控制台</a>
+            </p>
+        </div>
+    </div>
+    
+    <script>
+        // 显示当前访问信息
+        document.getElementById('currentUrl').textContent = window.location.href;
+        
+        // 检测部署平台
+        const host = window.location.host;
+        let platform = '未知';
+        let mode = '静态模式';
+        
+        if (host.includes('vercel.app') || host.includes('vercel.com')) {
+            platform = 'Vercel';
+        } else if (host.includes('netlify.app')) {
+            platform = 'Netlify';
+        } else if (host.includes('github.io')) {
+            platform = 'GitHub Pages';
+        } else if (host.includes('localhost') || host.includes('127.0.0.1')) {
+            platform = '本地开发';
+            mode = '开发模式';
+        } else {
+            platform = '自定义服务器';
+        }
+        
+        document.getElementById('platform').textContent = platform;
+        document.getElementById('mode').textContent = mode;
+        
+        function updateStatus(elementId, status, message) {
+            const element = document.getElementById(elementId);
+            element.className = 'status-item status-' + status;
+            
+            let icon = '⏳';
+            if (status === 'success') icon = '✅';
+            else if (status === 'warning') icon = '⚠️';
+            else if (status === 'error') icon = '❌';
+            
+            element.innerHTML = `<span class="status-icon">${icon}</span><span>${message}</span>`;
+        }
+        
+        async function checkUrl() {
+            try {
+                const isHttps = window.location.protocol === 'https:';
+                const hasCustomDomain = !host.includes('vercel.app') && !host.includes('localhost');
+                
+                if (isHttps && platform === 'Vercel') {
+                    updateStatus('urlCheck', 'success', '✅ HTTPS访问正常，Vercel部署成功');
+                } else if (platform === 'Vercel') {
+                    updateStatus('urlCheck', 'warning', '⚠️ 建议使用HTTPS访问');
+                } else {
+                    updateStatus('urlCheck', 'success', `✅ 访问地址正常 (${platform})`);
+                }
+            } catch (error) {
+                updateStatus('urlCheck', 'error', '❌ 访问地址检查失败');
+            }
+        }
+        
+        async function checkFiles() {
+            try {
+                const response = await fetch('./legend-text.html', { method: 'HEAD' });
+                if (response.ok) {
+                    updateStatus('filesCheck', 'success', '✅ 游戏文件存在且可访问');
+                } else {
+                    updateStatus('filesCheck', 'error', '❌ 游戏文件缺失或无法访问');
+                }
+            } catch (error) {
+                updateStatus('filesCheck', 'error', '❌ 文件检查失败: ' + error.message);
+            }
+        }
+        
+        async function checkConfig() {
+            try {
+                const checks = [];
+                
+                // 检查vercel.json
+                try {
+                    const vercelResponse = await fetch('./vercel.json', { method: 'HEAD' });
+                    checks.push(vercelResponse.ok ? 'vercel.json ✅' : 'vercel.json ❌');
+                } catch {
+                    checks.push('vercel.json ❌');
+                }
+                
+                // 检查package.json
+                try {
+                    const packageResponse = await fetch('./package.json', { method: 'HEAD' });
+                    checks.push(packageResponse.ok ? 'package.json ✅' : 'package.json ❌');
+                } catch {
+                    checks.push('package.json ❌');
+                }
+                
+                const allGood = checks.every(check => check.includes('✅'));
+                if (allGood) {
+                    updateStatus('configCheck', 'success', '✅ 配置文件完整');
+                } else {
+                    updateStatus('configCheck', 'warning', '⚠️ 部分配置文件缺失: ' + checks.join(', '));
+                }
+            } catch (error) {
+                updateStatus('configCheck', 'error', '❌ 配置检查失败');
+            }
+        }
+        
+        function checkGame() {
+            try {
+                // 检查关键JavaScript文件
+                const script = document.createElement('script');
+                script.src = './network-manager.js';
+                script.onload = () => {
+                    updateStatus('gameCheck', 'success', '✅ 游戏核心文件加载正常');
+                };
+                script.onerror = () => {
+                    updateStatus('gameCheck', 'error', '❌ 游戏核心文件加载失败');
+                };
+                document.head.appendChild(script);
+            } catch (error) {
+                updateStatus('gameCheck', 'error', '❌ 游戏功能检查失败');
+            }
+        }
+        
+        function checkMobile() {
+            try {
+                const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+                const hasViewport = document.querySelector('meta[name="viewport"]');
+                
+                if (isMobile) {
+                    updateStatus('mobileCheck', 'success', '✅ 移动设备访问，适配正常');
+                } else {
+                    updateStatus('mobileCheck', 'success', '✅ 桌面设备访问，支持移动端');
+                }
+            } catch (error) {
+                updateStatus('mobileCheck', 'warning', '⚠️ 移动端适配检查失败');
+            }
+        }
+        
+        async function runAllChecks() {
+            document.getElementById('deploymentGuide').style.display = 'none';
+            
+            await checkUrl();
+            await new Promise(resolve => setTimeout(resolve, 500));
+            
+            await checkFiles();
+            await new Promise(resolve => setTimeout(resolve, 500));
+            
+            await checkConfig();
+            await new Promise(resolve => setTimeout(resolve, 500));
+            
+            checkGame();
+            await new Promise(resolve => setTimeout(resolve, 500));
+            
+            checkMobile();
+            
+            // 显示部署指南
+            setTimeout(() => {
+                document.getElementById('deploymentGuide').style.display = 'block';
+            }, 2000);
+        }
+        
+        // 页面加载时自动运行检查
+        window.addEventListener('load', () => {
+            setTimeout(runAllChecks, 1000);
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,1185 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Excel配置表导入工具</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+    <style>
+        .drag-over {
+            border-color: #3b82f6 !important;
+            background-color: #eff6ff !important;
+        }
+        .config-preview {
+            max-height: 400px;
+            overflow-y: auto;
+        }
+    </style>
+</head>
+<body class="bg-gray-50 min-h-screen">
+    <div class="container mx-auto px-4 py-8">
+        <div class="max-w-6xl mx-auto">
+            <!-- 标题 -->
+            <div class="text-center mb-8">
+                <h1 class="text-3xl font-bold text-gray-900 mb-2">Excel配置表双向转换工具</h1>
+                <p class="text-gray-600">支持Excel与配置文件的双向转换</p>
+            </div>
+
+            <!-- 功能模式选择 -->
+            <div class="bg-white rounded-lg shadow-md p-6 mb-8">
+                <h2 class="text-xl font-semibold mb-4">选择功能模式</h2>
+                <div class="flex space-x-4">
+                    <label class="flex items-center">
+                        <input type="radio" name="mode" value="import" class="mr-3" checked>
+                        <span class="text-gray-700">Excel导入模式 (Excel → 配置文件)</span>
+                    </label>
+                    <label class="flex items-center">
+                        <input type="radio" name="mode" value="export" class="mr-3">
+                        <span class="text-gray-700">配置导出模式 (配置文件 → Excel)</span>
+                    </label>
+                </div>
+            </div>
+
+            <!-- 主要内容区域 -->
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                <!-- 左侧：文件上传和配置 -->
+                <div class="space-y-6">
+                    <!-- 配置导出模式界面 -->
+                    <div id="exportModePanel" class="bg-white rounded-lg shadow-md p-6 hidden">
+                        <h2 class="text-xl font-semibold mb-4">配置文件导出为Excel</h2>
+                        <div class="space-y-4">
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">选择要导出的配置类型</label>
+                                <select id="exportConfigType" class="w-full p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                                    <option value="equipment">装备配置 (equipment-config.json)</option>
+                                    <option value="monster">怪物配置 (monster-config.json)</option>
+                                    <option value="item">物品配置 (item-config.json)</option>
+                                    <option value="crafting">合成配置 (crafting-config.json)</option>
+                                    <option value="player">玩家配置 (player-config.json)</option>
+                                    <option value="map">地图配置 (map-config.json)</option>
+                                    <option value="monster-drops">怪物掉落配置 (monster-drops-config.json)</option>
+                                    <option value="main-quest">主线任务配置 (main-quest-config-numeric.json)</option>
+                                </select>
+                            </div>
+                            <button id="loadConfigBtn" class="w-full bg-blue-600 text-white py-3 px-4 rounded-md hover:bg-blue-700 transition-colors">
+                                加载配置文件
+                            </button>
+                            <button id="testLoadBtn" class="w-full bg-yellow-600 text-white py-3 px-4 rounded-md hover:bg-yellow-700 transition-colors">
+                                测试加载
+                            </button>
+                            <button id="exportToExcelBtn" class="w-full bg-green-600 text-white py-3 px-4 rounded-md hover:bg-green-700 transition-colors disabled:bg-gray-400 disabled:cursor-not-allowed" disabled>
+                                导出为Excel文件
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- 文件上传区域 -->
+                    <div id="importModePanel" class="bg-white rounded-lg shadow-md p-6">
+                        <h2 class="text-xl font-semibold mb-4">1. 上传Excel文件</h2>
+                        <div id="dropZone" class="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center hover:border-blue-400 transition-colors cursor-pointer">
+                            <div class="space-y-4">
+                                <svg class="mx-auto h-12 w-12 text-gray-400" stroke="currentColor" fill="none" viewBox="0 0 48 48">
+                                    <path d="M28 8H12a4 4 0 00-4 4v20m32-12v8m0 0v8a4 4 0 01-4 4H12a4 4 0 01-4-4v-4m32-4l-3.172-3.172a4 4 0 00-5.656 0L28 28M8 32l9.172-9.172a4 4 0 015.656 0L28 28m0 0l4 4m4-24h8m-4-4v8m-12 4h.02" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
+                                </svg>
+                                <div>
+                                    <p class="text-lg font-medium text-gray-900">拖拽Excel文件到此处</p>
+                                    <p class="text-gray-500">或者 <span class="text-blue-600 underline">点击选择文件</span></p>
+                                    <p class="text-sm text-gray-400 mt-2">支持 .xlsx, .xls 格式</p>
+                                </div>
+                            </div>
+                            <input type="file" id="fileInput" class="hidden" accept=".xlsx,.xls">
+                        </div>
+                        <div id="fileInfo" class="mt-4 hidden">
+                            <div class="bg-blue-50 border border-blue-200 rounded-md p-3">
+                                <div class="flex items-center">
+                                    <svg class="h-5 w-5 text-blue-400 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                                        <path fill-rule="evenodd" d="M4 4a2 2 0 012-2h4.586A2 2 0 0112 2.586L15.414 6A2 2 0 0116 7.414V16a2 2 0 01-2 2H6a2 2 0 01-2-2V4zm2 6a1 1 0 011-1h6a1 1 0 110 2H7a1 1 0 01-1-1zm1 3a1 1 0 100 2h6a1 1 0 100-2H7z" clip-rule="evenodd"></path>
+                                    </svg>
+                                    <span id="fileName" class="text-blue-800 font-medium"></span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 配置表类型选择 (仅导入模式显示) -->
+                    <div id="configTypePanel" class="bg-white rounded-lg shadow-md p-6">
+                        <h2 class="text-xl font-semibold mb-4">2. 选择配置表类型</h2>
+                        <div class="space-y-3">
+                            <label class="flex items-center">
+                                <input type="radio" name="configType" value="equipment" class="mr-3" checked>
+                                <span class="text-gray-700">装备配置表 (武器、防具、饰品等)</span>
+                            </label>
+                            <label class="flex items-center">
+                                <input type="radio" name="configType" value="monster" class="mr-3">
+                                <span class="text-gray-700">怪物配置表 (各地图怪物数据)</span>
+                            </label>
+                            <label class="flex items-center">
+                                <input type="radio" name="configType" value="item" class="mr-3">
+                                <span class="text-gray-700">物品配置表 (药水、材料等)</span>
+                            </label>
+                            <label class="flex items-center">
+                                <input type="radio" name="configType" value="crafting" class="mr-3">
+                                <span class="text-gray-700">合成配置表 (合成配方)</span>
+                            </label>
+                            <label class="flex items-center">
+                                <input type="radio" name="configType" value="player" class="mr-3">
+                                <span class="text-gray-700">玩家配置表 (初始属性、职业)</span>
+                            </label>
+                        </div>
+                    </div>
+
+                    <!-- 工作表选择 -->
+                    <div id="sheetSelector" class="bg-white rounded-lg shadow-md p-6 hidden">
+                        <h2 class="text-xl font-semibold mb-4">3. 选择工作表</h2>
+                        <select id="sheetSelect" class="w-full p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                            <option value="">请选择工作表...</option>
+                        </select>
+                    </div>
+
+                    <!-- 操作按钮 -->
+                    <div class="space-y-3">
+                        <button id="parseBtn" class="w-full bg-blue-600 text-white py-3 px-4 rounded-md hover:bg-blue-700 transition-colors disabled:bg-gray-400 disabled:cursor-not-allowed" disabled>
+                            解析数据
+                        </button>
+                        <button id="exportBtn" class="w-full bg-green-600 text-white py-3 px-4 rounded-md hover:bg-green-700 transition-colors disabled:bg-gray-400 disabled:cursor-not-allowed" disabled>
+                            导出配置文件
+                        </button>
+                        <button id="downloadTemplate" class="w-full bg-purple-600 text-white py-3 px-4 rounded-md hover:bg-purple-700 transition-colors">
+                            下载Excel模板
+                        </button>
+                    </div>
+                </div>
+
+                <!-- 右侧：数据预览和日志 -->
+                <div class="space-y-6">
+                    <!-- 数据预览 -->
+                    <div class="bg-white rounded-lg shadow-md p-6">
+                        <h2 class="text-xl font-semibold mb-4">数据预览</h2>
+                        <div id="dataPreview" class="config-preview">
+                            <div class="text-gray-500 text-center py-8">
+                                <svg class="mx-auto h-12 w-12 text-gray-300 mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                                </svg>
+                                <p>请先上传Excel文件并解析数据</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 操作日志 -->
+                    <div class="bg-white rounded-lg shadow-md p-6">
+                        <h2 class="text-xl font-semibold mb-4">操作日志</h2>
+                        <div id="logArea" class="bg-gray-50 rounded-md p-4 h-48 overflow-y-auto font-mono text-sm">
+                            <div class="text-gray-500">等待操作...</div>
+                        </div>
+                    </div>
+
+                    <!-- 数据统计 -->
+                    <div id="dataStats" class="bg-white rounded-lg shadow-md p-6 hidden">
+                        <h2 class="text-xl font-semibold mb-4">数据统计</h2>
+                        <div class="grid grid-cols-2 gap-4">
+                            <div class="text-center">
+                                <div id="totalRows" class="text-2xl font-bold text-blue-600">0</div>
+                                <div class="text-gray-500">总行数</div>
+                            </div>
+                            <div class="text-center">
+                                <div id="validRows" class="text-2xl font-bold text-green-600">0</div>
+                                <div class="text-gray-500">有效数据</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // 全局变量
+        let currentWorkbook = null;
+        let parsedData = null;
+        let configType = 'equipment';
+        let currentMode = 'import';
+        let loadedConfigData = null;
+
+        // DOM元素
+        const dropZone = document.getElementById('dropZone');
+        const fileInput = document.getElementById('fileInput');
+        const fileInfo = document.getElementById('fileInfo');
+        const fileName = document.getElementById('fileName');
+        const sheetSelector = document.getElementById('sheetSelector');
+        const sheetSelect = document.getElementById('sheetSelect');
+        const parseBtn = document.getElementById('parseBtn');
+        const exportBtn = document.getElementById('exportBtn');
+        const downloadTemplate = document.getElementById('downloadTemplate');
+        const dataPreview = document.getElementById('dataPreview');
+        const logArea = document.getElementById('logArea');
+        const dataStats = document.getElementById('dataStats');
+        const totalRows = document.getElementById('totalRows');
+        const validRows = document.getElementById('validRows');
+        
+        // 新增DOM元素
+        const importModePanel = document.getElementById('importModePanel');
+        const exportModePanel = document.getElementById('exportModePanel');
+        const configTypePanel = document.getElementById('configTypePanel');
+        const exportConfigType = document.getElementById('exportConfigType');
+        const loadConfigBtn = document.getElementById('loadConfigBtn');
+        const testLoadBtn = document.getElementById('testLoadBtn');
+        const exportToExcelBtn = document.getElementById('exportToExcelBtn');
+
+        // 日志函数
+        function addLog(message, type = 'info') {
+            const timestamp = new Date().toLocaleTimeString();
+            const logEntry = document.createElement('div');
+            logEntry.className = `mb-1 ${type === 'error' ? 'text-red-600' : type === 'success' ? 'text-green-600' : 'text-gray-700'}`;
+            logEntry.textContent = `[${timestamp}] ${message}`;
+            logArea.appendChild(logEntry);
+            logArea.scrollTop = logArea.scrollHeight;
+        }
+
+        // 文件拖拽处理
+        dropZone.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            dropZone.classList.add('drag-over');
+        });
+
+        // 测试加载功能
+        testLoadBtn.addEventListener('click', async () => {
+            addLog('开始测试配置文件加载功能...');
+            
+            const testTypes = ['equipment', 'monster', 'item', 'crafting', 'player', 'map', 'monster-drops', 'main-quest'];
+            
+            for (const type of testTypes) {
+                try {
+                    addLog(`测试加载 ${getConfigTypeName(type)}...`);
+                    const data = await loadConfigFile(type);
+                    const count = getConfigDataCount(data, type);
+                    addLog(`✓ ${getConfigTypeName(type)} 加载成功，${count} 条记录`, 'success');
+                } catch (error) {
+                    addLog(`✗ ${getConfigTypeName(type)} 加载失败: ${error.message}`, 'error');
+                }
+            }
+            
+            addLog('测试完成！');
+        });
+
+        dropZone.addEventListener('dragleave', (e) => {
+            e.preventDefault();
+            dropZone.classList.remove('drag-over');
+        });
+
+        dropZone.addEventListener('drop', (e) => {
+            e.preventDefault();
+            dropZone.classList.remove('drag-over');
+            const files = e.dataTransfer.files;
+            if (files.length > 0) {
+                handleFile(files[0]);
+            }
+        });
+
+        dropZone.addEventListener('click', () => {
+            fileInput.click();
+        });
+
+        fileInput.addEventListener('change', (e) => {
+            if (e.target.files.length > 0) {
+                handleFile(e.target.files[0]);
+            }
+        });
+
+        // 模式切换
+        document.querySelectorAll('input[name="mode"]').forEach(radio => {
+            radio.addEventListener('change', (e) => {
+                currentMode = e.target.value;
+                toggleMode(currentMode);
+                addLog(`切换到${currentMode === 'import' ? '导入' : '导出'}模式`);
+            });
+        });
+
+        // 配置类型选择
+        document.querySelectorAll('input[name="configType"]').forEach(radio => {
+            radio.addEventListener('change', (e) => {
+                configType = e.target.value;
+                addLog(`切换配置类型: ${getConfigTypeName(configType)}`);
+            });
+        });
+
+        // 模式切换函数
+        function toggleMode(mode) {
+            if (mode === 'import') {
+                importModePanel.classList.remove('hidden');
+                configTypePanel.classList.remove('hidden');
+                exportModePanel.classList.add('hidden');
+            } else {
+                importModePanel.classList.add('hidden');
+                configTypePanel.classList.add('hidden');
+                exportModePanel.classList.remove('hidden');
+            }
+        }
+
+        // 文件处理
+        function handleFile(file) {
+            if (!file.name.match(/\.(xlsx|xls)$/)) {
+                addLog('请选择Excel文件 (.xlsx 或 .xls)', 'error');
+                return;
+            }
+
+            fileName.textContent = file.name;
+            fileInfo.classList.remove('hidden');
+            addLog(`文件已选择: ${file.name}`);
+
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                try {
+                    currentWorkbook = XLSX.read(e.target.result, { type: 'binary' });
+                    populateSheetSelector();
+                    parseBtn.disabled = false;
+                    addLog('Excel文件读取成功', 'success');
+                } catch (error) {
+                    addLog(`文件读取失败: ${error.message}`, 'error');
+                }
+            };
+            reader.readAsBinaryString(file);
+        }
+
+        // 填充工作表选择器
+        function populateSheetSelector() {
+            sheetSelect.innerHTML = '<option value="">请选择工作表...</option>';
+            
+            // 检查是否为装备配置且有多个工作表
+            if (configType === 'equipment' && currentWorkbook.SheetNames.length > 1) {
+                // 装备配置多工作表提示
+                const option = document.createElement('option');
+                option.value = 'all';
+                option.textContent = `合并所有工作表 (${currentWorkbook.SheetNames.length} 个装备分类)`;
+                option.selected = true;
+                sheetSelect.appendChild(option);
+                
+                // 添加分隔线
+                const separator = document.createElement('option');
+                separator.disabled = true;
+                separator.textContent = '--- 单独工作表 ---';
+                sheetSelect.appendChild(separator);
+            }
+            
+            currentWorkbook.SheetNames.forEach(name => {
+                const option = document.createElement('option');
+                option.value = name;
+                option.textContent = name;
+                sheetSelect.appendChild(option);
+            });
+            sheetSelector.classList.remove('hidden');
+            
+            // 如果是装备配置且有多个工作表，启用解析按钮
+            if (configType === 'equipment' && currentWorkbook.SheetNames.length > 1) {
+                parseBtn.disabled = false;
+                addLog('检测到装备配置多工作表，将自动合并所有分类数据', 'success');
+            }
+        }
+
+        // 解析数据
+        parseBtn.addEventListener('click', () => {
+            const selectedSheet = sheetSelect.value;
+            if (!selectedSheet) {
+                addLog('请选择工作表', 'error');
+                return;
+            }
+
+            try {
+                // 检查是否选择合并所有工作表或装备配置多工作表
+                if (selectedSheet === 'all' || (configType === 'equipment' && currentWorkbook.SheetNames.length > 1)) {
+                    // 装备配置：合并所有工作表数据
+                    parsedData = parseEquipmentConfigFromMultipleSheets();
+                    addLog(`装备配置解析完成，合并了 ${currentWorkbook.SheetNames.length} 个工作表`, 'success');
+                } else {
+                    // 其他配置：单工作表处理
+                    const worksheet = currentWorkbook.Sheets[selectedSheet];
+                    const jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
+                    parsedData = parseConfigData(jsonData, configType);
+                    addLog(`数据解析完成，共 ${parsedData.length} 条有效记录`, 'success');
+                }
+                
+                displayPreview(parsedData);
+                updateStats(getTotalRowCount(), getValidRowCount());
+                exportBtn.disabled = false;
+            } catch (error) {
+                addLog(`数据解析失败: ${error.message}`, 'error');
+            }
+        });
+
+        // 解析装备配置的多个工作表
+        function parseEquipmentConfigFromMultipleSheets() {
+            const equipmentData = {};
+            let totalItems = 0;
+            
+            currentWorkbook.SheetNames.forEach(sheetName => {
+                try {
+                    const worksheet = currentWorkbook.Sheets[sheetName];
+                    const jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
+                    
+                    if (jsonData.length >= 2) {
+                        const items = parseConfigData(jsonData, 'equipment');
+                        if (items.length > 0) {
+                            equipmentData[sheetName] = items;
+                            totalItems += items.length;
+                            addLog(`工作表 "${sheetName}" 解析成功，${items.length} 条装备`, 'success');
+                        }
+                    }
+                } catch (error) {
+                    addLog(`工作表 "${sheetName}" 解析失败: ${error.message}`, 'error');
+                }
+            });
+            
+            addLog(`装备配置合并完成，总计 ${totalItems} 条装备数据`);
+            return equipmentData;
+        }
+        
+        // 获取总行数（用于统计）
+        function getTotalRowCount() {
+            if (configType === 'equipment' && typeof parsedData === 'object' && !Array.isArray(parsedData)) {
+                return Object.values(parsedData).reduce((total, items) => total + items.length, 0);
+            }
+            return Array.isArray(parsedData) ? parsedData.length : 0;
+        }
+        
+        // 获取有效行数（用于统计）
+        function getValidRowCount() {
+            if (configType === 'equipment' && typeof parsedData === 'object' && !Array.isArray(parsedData)) {
+                return Object.values(parsedData).reduce((total, items) => total + items.length, 0);
+            }
+            return Array.isArray(parsedData) ? parsedData.length : 0;
+        }
+
+        // 解析配置数据
+        function parseConfigData(rawData, type) {
+            if (rawData.length < 2) {
+                throw new Error('数据行数不足');
+            }
+
+            const headers = rawData[0];
+            const dataRows = rawData.slice(1);
+            const result = [];
+
+            dataRows.forEach((row, index) => {
+                if (row.length === 0 || !row[0]) return; // 跳过空行
+                
+                // 跳过注释行（第二行通常是字段说明）
+                if (index === 0 && row.every(cell => typeof cell === 'string' && cell.includes('说明'))) {
+                    return;
+                }
+
+                const item = {};
+                headers.forEach((header, colIndex) => {
+                    if (header && row[colIndex] !== undefined) {
+                        item[header] = parseValue(row[colIndex], header);
+                    }
+                });
+
+                if (validateConfigItem(item, type)) {
+                    result.push(item);
+                } else {
+                    addLog(`第 ${index + 2} 行数据验证失败`, 'error');
+                }
+            });
+
+            return result;
+        }
+
+        // 解析值
+        function parseValue(value, header) {
+            // 处理空值
+            if (value === null || value === undefined || value === '') {
+                return null;
+            }
+
+            // 字符串处理
+            let stringValue = String(value).trim();
+            
+            // 处理显式的null字符串
+            if (stringValue === 'null') {
+                return null;
+            }
+            
+            // 处理布尔值字符串
+            if (stringValue === 'true') {
+                return true;
+            }
+            if (stringValue === 'false') {
+                return false;
+            }
+
+            // 数值类型字段
+            const numericFields = ['price', 'level', 'hp', 'mp', 'attack', 'defense', 'critRate', 'critDamage', 'exp', 'gold', 'width', 'height', 'resultCount', 'maxStack'];
+            if (numericFields.includes(header)) {
+                const num = Number(stringValue);
+                return isNaN(num) ? 0 : num;
+            }
+            
+            // 还原转义的换行符
+            if (stringValue.includes('\\n') || stringValue.includes('\\r')) {
+                stringValue = stringValue.replace(/\\n/g, '\n').replace(/\\r/g, '\r');
+            }
+            
+            // 尝试解析JSON格式的字符串（数组或对象）
+            if ((stringValue.startsWith('[') && stringValue.endsWith(']')) || 
+                (stringValue.startsWith('{') && stringValue.endsWith('}'))) {
+                try {
+                    return JSON.parse(stringValue);
+                } catch (e) {
+                    // 如果JSON解析失败，返回原字符串
+                    console.warn(`JSON解析失败 (${header}):`, stringValue, e);
+                }
+            }
+
+            // 区间类型字段处理（攻击力范围、防御范围等）
+            const rangeFields = ['attack', 'gold', 'attackRange', 'defenseRange', 'damageRange', 'healRange'];
+            if (rangeFields.includes(header) && typeof stringValue === 'string') {
+                // 处理逗号分割的字符串格式 "数字,数字" (新的标准格式)
+                if (stringValue.includes(',')) {
+                    const parts = stringValue.split(',').map(s => s.trim());
+                    if (parts.length === 2 && parts.every(p => !isNaN(Number(p)))) {
+                        return stringValue; // 保持字符串格式
+                    }
+                }
+                
+                // 匹配 [数字,数字] 格式，转换为字符串格式
+                const match = stringValue.match(/\[(\d+),\s*(\d+)\]/);
+                if (match) {
+                    return `${match[1]},${match[2]}`;
+                }
+                // 匹配 数字-数字 格式，转换为字符串格式
+                const dashMatch = stringValue.match(/(\d+)-(\d+)/);
+                if (dashMatch) {
+                    return `${dashMatch[1]},${dashMatch[2]}`;
+                }
+                // 匹配 数字~数字 格式，转换为字符串格式
+                const tildeMatch = stringValue.match(/(\d+)~(\d+)/);
+                if (tildeMatch) {
+                    return `${tildeMatch[1]},${tildeMatch[2]}`;
+                }
+            }
+            
+            // 尝试解析为数值（对于可能是数值但不在numericFields中的字段）
+            if (/^-?\d+(\.\d+)?$/.test(stringValue)) {
+                const num = Number(stringValue);
+                if (!isNaN(num)) {
+                    return num;
+                }
+            }
+
+            return stringValue;
+        }
+
+        // 验证配置项
+        function validateConfigItem(item, type) {
+            switch (type) {
+                case 'equipment':
+                    return item.name && (item.price !== null || item.price >= 0);
+                case 'monster':
+                    return item.name && item.hp > 0 && item.level > 0;
+                case 'item':
+                    return item.name && item.price >= 0;
+                case 'crafting':
+                    return item.name && item.result;
+                case 'player':
+                    return item.class || item.attribute;
+                default:
+                    return true;
+            }
+        }
+
+        // 显示预览
+        function displayPreview(data) {
+            if (!data) {
+                dataPreview.innerHTML = '<div class="text-gray-500 text-center py-8">没有有效数据</div>';
+                return;
+            }
+
+            let html = '<div class="space-y-2">';
+            
+            // 处理装备配置的多分类数据
+            if (configType === 'equipment' && typeof data === 'object' && !Array.isArray(data)) {
+                let itemCount = 0;
+                Object.entries(data).forEach(([category, items]) => {
+                    if (Array.isArray(items) && items.length > 0) {
+                        html += `<div class="bg-blue-50 border border-blue-200 rounded-md p-3 mb-3">`;
+                        html += `<div class="font-bold text-blue-800 mb-2">${category} (${items.length} 件装备)</div>`;
+                        
+                        const preview = items.slice(0, 3); // 每个分类显示前3条
+                        preview.forEach((item, index) => {
+                            itemCount++;
+                            html += `
+                                <div class="border border-gray-200 rounded-md p-2 mb-2 bg-white">
+                                    <div class="font-medium text-gray-900">${itemCount}. ${item.name || '未命名'}</div>
+                                    <div class="text-sm text-gray-600 mt-1">
+                                        ${Object.entries(item).slice(1, 4).map(([key, value]) => 
+                                            `<span class="mr-3">${key}: ${JSON.stringify(value)}</span>`
+                                        ).join('')}
+                                    </div>
+                                </div>
+                            `;
+                        });
+                        
+                        if (items.length > 3) {
+                            html += `<div class="text-center text-gray-500 py-1">... 还有 ${items.length - 3} 件装备</div>`;
+                        }
+                        html += `</div>`;
+                    }
+                });
+            } else {
+                // 处理数组类型数据
+                const items = Array.isArray(data) ? data : [];
+                if (items.length === 0) {
+                    dataPreview.innerHTML = '<div class="text-gray-500 text-center py-8">没有有效数据</div>';
+                    return;
+                }
+                
+                const preview = items.slice(0, 10); // 只显示前10条
+                preview.forEach((item, index) => {
+                    html += `
+                        <div class="border border-gray-200 rounded-md p-3">
+                            <div class="font-medium text-gray-900">${index + 1}. ${item.name || '未命名'}</div>
+                            <div class="text-sm text-gray-600 mt-1">
+                                ${Object.entries(item).slice(1, 4).map(([key, value]) => 
+                                    `<span class="mr-3">${key}: ${JSON.stringify(value)}</span>`
+                                ).join('')}
+                            </div>
+                        </div>
+                    `;
+                });
+                
+                if (items.length > 10) {
+                    html += `<div class="text-center text-gray-500 py-2">... 还有 ${items.length - 10} 条数据</div>`;
+                }
+            }
+            
+            html += '</div>';
+            dataPreview.innerHTML = html;
+        }
+
+        // 更新统计
+        function updateStats(total, valid) {
+            totalRows.textContent = total;
+            validRows.textContent = valid;
+            dataStats.classList.remove('hidden');
+        }
+
+        // 导出配置文件
+        exportBtn.addEventListener('click', () => {
+            if (!parsedData) {
+                addLog('没有可导出的数据', 'error');
+                return;
+            }
+
+            let configData;
+            
+            // 处理装备配置的特殊格式
+            if (configType === 'equipment' && typeof parsedData === 'object' && !Array.isArray(parsedData)) {
+                configData = parsedData; // 保持分类结构
+            } else {
+                configData = parsedData;
+            }
+
+            const config = {
+                type: configType,
+                version: '1.0.0',
+                timestamp: new Date().toISOString(),
+                data: configData
+            };
+
+            const jsonString = JSON.stringify(config, null, 2);
+            const blob = new Blob([jsonString], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `${configType}-config.json`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+
+            addLog(`配置文件已导出: ${configType}-config.json`, 'success');
+        });
+
+        // 下载模板
+        downloadTemplate.addEventListener('click', () => {
+            generateTemplate(configType);
+        });
+
+        // 生成Excel模板
+        function generateTemplate(type) {
+            const templates = {
+                equipment: [
+                    ['name', 'type', 'rarity', 'price', 'attack', 'defense', 'hp', 'mp', 'critRate', 'critDamage', 'class', 'description'],
+                    ['木剑', 'weapon', 'common', 50, 5, 0, 0, 0, 0, 0, 'all', '基础武器'],
+                    ['布衣', 'armor', 'common', 30, 0, 2, 0, 0, 0, 0, 'all', '基础防具']
+                ],
+                monster: [
+                    ['name', 'hp', 'attack', 'defense', 'level', 'exp', 'gold', 'type', 'area'],
+                    ['小鸡', 20, 5, 0, 1, 10, 5, 'normal', '新手村'],
+                    ['野狼', 50, 12, 2, 3, 25, 15, 'normal', '森林']
+                ],
+                item: [
+                    ['name', 'type', 'rarity', 'price', 'heal', 'description'],
+                    ['小血瓶', 'potion', 'common', 20, 50, '恢复50点生命值'],
+                    ['铁矿石', 'material', 'common', 10, 0, '基础合成材料']
+                ],
+                crafting: [
+                    ['name', 'result', 'materials', 'gold', 'description'],
+                    ['铁剑合成', '铁剑', '铁矿石x3,木材x1', 100, '合成铁剑'],
+                    ['皮甲合成', '皮甲', '皮革x2,线x1', 80, '合成皮甲']
+                ],
+                player: [
+                    ['class', 'hp', 'mp', 'attack', 'defense', 'level', 'exp', 'gold'],
+                    ['warrior', 120, 30, 8, 8, 1, 0, 100],
+                    ['mage', 80, 100, 3, 3, 1, 0, 100]
+                ]
+            };
+
+            const templateData = templates[type] || templates.equipment;
+            const ws = XLSX.utils.aoa_to_sheet(templateData);
+            const wb = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(wb, ws, getConfigTypeName(type));
+            
+            XLSX.writeFile(wb, `${type}-template.xlsx`);
+            addLog(`Excel模板已下载: ${type}-template.xlsx`, 'success');
+        }
+
+        // 获取配置类型名称
+        function getConfigTypeName(type) {
+            const names = {
+                equipment: '装备配置',
+                monster: '怪物配置',
+                item: '物品配置',
+                crafting: '合成配置',
+                player: '玩家配置',
+                map: '地图配置',
+                'monster-drops': '怪物掉落配置',
+                'main-quest': '主线任务配置'
+            };
+            return names[type] || type;
+        }
+
+        // 配置文件加载
+        loadConfigBtn.addEventListener('click', async () => {
+            const selectedType = exportConfigType.value;
+            try {
+                addLog(`正在加载${getConfigTypeName(selectedType)}配置文件...`);
+                addLog(`配置类型: ${selectedType}`);
+                
+                const configData = await loadConfigFile(selectedType);
+                
+                if (!configData) {
+                    throw new Error('配置数据为空');
+                }
+                
+                loadedConfigData = configData;
+                displayConfigPreview(configData, selectedType);
+                exportToExcelBtn.disabled = false;
+                
+                const count = getConfigDataCount(configData, selectedType);
+                addLog(`配置文件加载成功，共 ${count} 条记录`, 'success');
+                addLog(`数据类型: ${Array.isArray(configData) ? '数组' : typeof configData}`);
+                
+            } catch (error) {
+                addLog(`配置文件加载失败: ${error.message}`, 'error');
+                addLog(`错误详情: ${error.stack || error.toString()}`, 'error');
+                console.error('详细错误信息:', error);
+            }
+        });
+
+        // 导出为Excel
+        exportToExcelBtn.addEventListener('click', () => {
+            if (!loadedConfigData) {
+                addLog('没有加载的配置数据', 'error');
+                return;
+            }
+            
+            const selectedType = exportConfigType.value;
+            try {
+                exportConfigToExcel(loadedConfigData, selectedType);
+                addLog(`Excel文件导出成功: ${selectedType}-config.xlsx`, 'success');
+            } catch (error) {
+                addLog(`Excel导出失败: ${error.message}`, 'error');
+            }
+        });
+
+        // 加载配置文件
+        async function loadConfigFile(configType) {
+            try {
+                let fileName = `${configType}-config.json`;
+                if (configType === 'main-quest') {
+                    fileName = 'main-quest-config-numeric.json';
+                }
+                
+                console.log(`正在加载配置文件: ${fileName}`);
+                const response = await fetch(`./configs/${fileName}`);
+                console.log(`响应状态: ${response.status} ${response.statusText}`);
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                }
+                
+                const config = await response.json();
+                console.log(`配置文件内容:`, config);
+                
+                // 根据配置类型返回正确的数据结构
+                if (config.data) {
+                    if (configType === 'monster-drops' && config.data.monsterDrops) {
+                        console.log(`返回怪物掉落数据:`, config.data.monsterDrops);
+                        return config.data.monsterDrops;
+                    } else if (configType === 'map' && config.data.maps) {
+                        console.log(`返回地图数据:`, config.data);
+                        return config.data;
+                    } else {
+                        console.log(`返回配置数据:`, config.data);
+                        return config.data;
+                    }
+                }
+                
+                console.log(`返回原始配置:`, config);
+                return config;
+            } catch (error) {
+                console.error(`加载配置文件失败:`, error);
+                throw error;
+            }
+        }
+
+        // 显示配置预览
+        function displayConfigPreview(data, type) {
+            if (!data) {
+                dataPreview.innerHTML = '<div class="text-gray-500 text-center py-8">没有配置数据</div>';
+                return;
+            }
+
+            let items = [];
+            if (type === 'equipment') {
+                // 装备配置包含多个类别
+                items = Object.values(data).flat().slice(0, 10);
+            } else if (type === 'monster') {
+                // 怪物配置是数组
+                items = Array.isArray(data) ? data.slice(0, 10) : [];
+            } else if (type === 'map') {
+                // 地图配置
+                items = data.maps ? data.maps.slice(0, 10) : [];
+            } else if (type === 'monster-drops') {
+                // 怪物掉落配置是对象
+                items = Object.values(data).slice(0, 10);
+            } else if (Array.isArray(data)) {
+                items = data.slice(0, 10);
+            } else if (typeof data === 'object') {
+                items = Object.values(data).slice(0, 10);
+            }
+
+            let html = '<div class="space-y-2">';
+            items.forEach((item, index) => {
+                const name = item.name || item.title || item.id || `项目${index + 1}`;
+                html += `
+                    <div class="border border-gray-200 rounded-md p-3">
+                        <div class="font-medium text-gray-900">${index + 1}. ${name}</div>
+                        <div class="text-sm text-gray-600 mt-1">
+                            ${Object.entries(item).slice(1, 4).map(([key, value]) => 
+                                `<span class="mr-3">${key}: ${JSON.stringify(value)}</span>`
+                            ).join('')}
+                        </div>
+                    </div>
+                `;
+            });
+            
+            const totalCount = getConfigDataCount(data, type);
+            if (totalCount > 10) {
+                html += `<div class="text-center text-gray-500 py-2">... 还有 ${totalCount - 10} 条数据</div>`;
+            }
+            
+            html += '</div>';
+            dataPreview.innerHTML = html;
+        }
+
+        // 获取配置数据数量
+        function getConfigDataCount(data, type) {
+            if (!data) return 0;
+            
+            if (type === 'equipment') {
+                return Object.values(data).reduce((total, arr) => total + (Array.isArray(arr) ? arr.length : 0), 0);
+            } else if (type === 'map') {
+                return data.maps ? data.maps.length : 0;
+            } else if (type === 'monster-drops') {
+                return Object.keys(data).length;
+            } else if (Array.isArray(data)) {
+                return data.length;
+            } else if (typeof data === 'object') {
+                return Object.keys(data).length;
+            }
+            return 0;
+        }
+
+        // 导出配置为Excel
+        function exportConfigToExcel(data, type) {
+            const wb = XLSX.utils.book_new();
+            
+            if (type === 'equipment') {
+                // 装备配置分多个工作表
+                Object.entries(data).forEach(([category, items]) => {
+                    if (Array.isArray(items) && items.length > 0) {
+                        const ws = createWorksheetFromData(items, type);
+                        XLSX.utils.book_append_sheet(wb, ws, category);
+                    }
+                });
+            } else if (type === 'monster') {
+                // 怪物配置
+                const ws = createWorksheetFromData(Array.isArray(data) ? data : [], type);
+                XLSX.utils.book_append_sheet(wb, ws, '怪物配置');
+            } else if (type === 'map') {
+                // 地图配置
+                const maps = data.maps || [];
+                const ws = createWorksheetFromData(maps, type);
+                XLSX.utils.book_append_sheet(wb, ws, '地图配置');
+            } else if (type === 'monster-drops') {
+                // 怪物掉落配置
+                const items = Object.values(data);
+                const ws = createWorksheetFromData(items, type);
+                XLSX.utils.book_append_sheet(wb, ws, '怪物掉落配置');
+            } else {
+                // 其他配置类型
+                let items = [];
+                if (Array.isArray(data)) {
+                    items = data;
+                } else if (typeof data === 'object') {
+                    items = Object.values(data);
+                }
+                const ws = createWorksheetFromData(items, type);
+                XLSX.utils.book_append_sheet(wb, ws, getConfigTypeName(type));
+            }
+            
+            XLSX.writeFile(wb, `${type}-config.xlsx`);
+        }
+
+        // 字段注释映射
+        function getFieldComments() {
+            return {
+                // 装备配置字段注释
+                equipment: {
+                    id: '装备唯一标识符',
+                    name: '装备名称',
+                    type: '装备类型(weapon/armor/accessory)',
+                    rarity: '稀有度(common/uncommon/rare/epic/legendary)',
+                    price: '装备价格(金币)',
+                    attack: '攻击力数值',
+                    defense: '防御力数值',
+                    critRate: '暴击率(0-1之间的小数)',
+                    critDamage: '暴击伤害倍数',
+                    requirements: '装备需求(JSON格式)',
+                    description: '装备描述文本'
+                },
+                // 怪物配置字段注释
+                monster: {
+                    id: '怪物唯一标识符',
+                    name: '怪物名称',
+                    level: '怪物等级',
+                    hp: '生命值',
+                    attack: '攻击力',
+                    defense: '防御力',
+                    speed: '移动速度',
+                    exp: '击败获得经验值',
+                    gold: '击败获得金币',
+                    skills: '怪物技能列表(JSON格式)',
+                    dropItems: '掉落物品列表(JSON格式)'
+                },
+                // 物品配置字段注释
+                item: {
+                    id: '物品唯一标识符',
+                    name: '物品名称',
+                    type: '物品类型(potion/material/consumable)',
+                    rarity: '稀有度',
+                    price: '物品价格',
+                    effect: '物品效果(JSON格式)',
+                    stackable: '是否可堆叠(true/false)',
+                    maxStack: '最大堆叠数量',
+                    description: '物品描述'
+                },
+                // 合成配置字段注释
+                crafting: {
+                    id: '合成配方唯一标识符',
+                    name: '合成配方名称',
+                    resultItem: '合成结果物品ID',
+                    resultCount: '合成结果数量',
+                    materials: '所需材料列表(JSON格式)',
+                    requirements: '合成条件(JSON格式)',
+                    category: '合成分类'
+                },
+                // 玩家配置字段注释
+                player: {
+                    level: '玩家等级',
+                    hp: '初始生命值',
+                    attack: '初始攻击力',
+                    defense: '初始防御力',
+                    speed: '初始移动速度',
+                    exp: '当前经验值',
+                    gold: '初始金币数量',
+                    inventory: '背包物品(JSON格式)',
+                    equipment: '装备物品(JSON格式)'
+                },
+                // 地图配置字段注释
+                map: {
+                    id: '地图唯一标识符',
+                    name: '地图名称',
+                    width: '地图宽度(格子数)',
+                    height: '地图高度(格子数)',
+                    terrain: '地形数据(JSON格式)',
+                    monsters: '怪物分布(JSON格式)',
+                    npcs: 'NPC分布(JSON格式)',
+                    items: '物品分布(JSON格式)',
+                    exits: '出口位置(JSON格式)'
+                },
+                // 怪物掉落配置字段注释
+                'monster-drops': {
+                    monsterName: '怪物名称',
+                    dropIds: '掉落物品ID列表(逗号分隔)',
+                    dropRate: '掉落概率(0-1之间的小数)'
+                },
+                // 主线任务配置字段注释
+                'main-quest': {
+                    id: '任务唯一标识符',
+                    title: '任务标题',
+                    description: '任务描述',
+                    objectives: '任务目标(JSON格式)',
+                    rewards: '任务奖励(JSON格式)',
+                    prerequisites: '前置任务要求(JSON格式)',
+                    status: '任务状态',
+                    type: '任务类型'
+                }
+            };
+        }
+
+        // 获取字段默认值
+        function getFieldDefaultValue(header, configType) {
+            // 数值类型字段默认值为0
+            const numericFields = ['price', 'level', 'hp', 'mp', 'attack', 'defense', 'critRate', 'critDamage', 'exp', 'gold', 'width', 'height', 'resultCount', 'maxStack', 'speed'];
+            if (numericFields.includes(header)) {
+                return 0;
+            }
+            
+            // 区间类型字段默认值为"0,0"
+             const rangeFields = ['attack', 'gold', 'attackRange', 'defenseRange', 'damageRange', 'healRange'];
+             if (rangeFields.includes(header)) {
+                 return "0,0";
+             }
+            
+            // 布尔类型字段默认值为false
+            const booleanFields = ['stackable', 'enabled', 'active', 'completed'];
+            if (booleanFields.includes(header)) {
+                return false;
+            }
+            
+            // 数组/对象类型字段默认值
+            const arrayFields = ['skills', 'dropItems', 'materials', 'requirements', 'objectives', 'rewards', 'prerequisites', 'inventory', 'equipment', 'terrain', 'monsters', 'npcs', 'items', 'exits'];
+            if (arrayFields.includes(header)) {
+                return [];
+            }
+            
+            // 字符串类型字段默认值为空字符串
+            return '';
+        }
+
+        // 从数据创建工作表(带字段注释)
+        function createWorksheetFromData(items, configType = '') {
+            if (!Array.isArray(items) || items.length === 0) {
+                return XLSX.utils.aoa_to_sheet([['没有数据']]);
+            }
+            
+            // 获取所有可能的列名
+            const allKeys = new Set();
+            items.forEach(item => {
+                if (typeof item === 'object' && item !== null) {
+                    Object.keys(item).forEach(key => allKeys.add(key));
+                }
+            });
+            
+            const headers = Array.from(allKeys);
+            const fieldComments = getFieldComments();
+            const typeComments = fieldComments[configType] || {};
+            
+            // 创建注释行
+            const commentRow = headers.map(header => {
+                return typeComments[header] || `${header}字段说明`;
+            });
+            
+            // 构建数据行
+            const rows = [
+                headers,      // 第一行：字段名
+                commentRow    // 第二行：字段注释
+            ];
+            
+            items.forEach(item => {
+                const row = headers.map(header => {
+                    let value = item[header];
+                    
+                    // 处理undefined和不存在的属性，使用默认值
+                    if (value === undefined || !(header in item)) {
+                        value = getFieldDefaultValue(header, configType);
+                    }
+                    
+                    // 处理null值
+                    if (value === null) {
+                        return 'null';
+                    }
+                    
+                    // 处理数组类型
+                    if (Array.isArray(value)) {
+                        return JSON.stringify(value).replace(/\n/g, '\\n').replace(/\r/g, '\\r');
+                    }
+                    
+                    // 处理对象类型
+                    if (typeof value === 'object') {
+                        return JSON.stringify(value).replace(/\n/g, '\\n').replace(/\r/g, '\\r');
+                    }
+                    
+                    // 处理包含换行符的字符串
+                    if (typeof value === 'string' && (value.includes('\n') || value.includes('\r'))) {
+                        return value.replace(/\n/g, '\\n').replace(/\r/g, '\\r');
+                    }
+                    
+                    // 处理布尔值
+                    if (typeof value === 'boolean') {
+                        return value.toString();
+                    }
+                    
+                    // 处理数值（包括0）
+                    if (typeof value === 'number') {
+                        return value.toString();
+                    }
+                    
+                    // 处理空字符串
+                    if (value === '') {
+                        return '';
+                    }
+                    
+                    // 其他情况转为字符串
+                    return String(value);
+                });
+                rows.push(row);
+            });
+            
+            const ws = XLSX.utils.aoa_to_sheet(rows);
+            
+            // 设置注释行样式(第二行)
+            const range = XLSX.utils.decode_range(ws['!ref']);
+            for (let col = range.s.c; col <= range.e.c; col++) {
+                const cellAddress = XLSX.utils.encode_cell({ r: 1, c: col });
+                if (ws[cellAddress]) {
+                    ws[cellAddress].s = {
+                        fill: { fgColor: { rgb: "E6F3FF" } },
+                        font: { italic: true, color: { rgb: "666666" } }
+                    };
+                }
+            }
+            
+            return ws;
+        }
+
+        // 初始化
+        addLog('Excel配置表双向转换工具已就绪');
+        toggleMode('import'); // 默认导入模式
+    </script>
+</body>
+</html>

@@ -1,0 +1,277 @@
+{
+  "type": "item",
+  "version": "1.0.0",
+  "timestamp": "2024-01-01T00:00:00.000Z",
+  "data": {
+    "potions": [
+      {
+        "id": 2001,
+        "name": "小型生命药水",
+        "type": "potion",
+        "subType": "hp",
+        "rarity": "common",
+        "price": 20,
+        "effect": {
+          "type": "heal",
+          "value": 30,
+          "isPercent": false
+        },
+        "stackable": true,
+        "maxStack": 99,
+        "description": "恢复30点生命值"
+      },
+      {
+        "id": 2002,
+        "name": "中型生命药水",
+        "type": "potion",
+        "subType": "hp",
+        "rarity": "common",
+        "price": 50,
+        "effect": {
+          "type": "heal",
+          "value": 80,
+          "isPercent": false
+        },
+        "stackable": true,
+        "maxStack": 99,
+        "description": "恢复80点生命值"
+      },
+      {
+        "id": 2003,
+        "name": "大型生命药水",
+        "type": "potion",
+        "subType": "hp",
+        "rarity": "rare",
+        "price": 120,
+        "effect": {
+          "type": "heal",
+          "value": 200,
+          "isPercent": false
+        },
+        "stackable": true,
+        "maxStack": 99,
+        "description": "恢复200点生命值"
+      },
+      {
+        "id": 2004,
+        "name": "小型魔法药水",
+        "type": "potion",
+        "subType": "mp",
+        "rarity": "common",
+        "price": 25,
+        "effect": {
+          "type": "restore_mp",
+          "value": 20,
+          "isPercent": false
+        },
+        "stackable": true,
+        "maxStack": 99,
+        "description": "恢复20点魔法值"
+      },
+      {
+        "id": 2005,
+        "name": "中型魔法药水",
+        "type": "potion",
+        "subType": "mp",
+        "rarity": "common",
+        "price": 60,
+        "effect": {
+          "type": "restore_mp",
+          "value": 50,
+          "isPercent": false
+        },
+        "stackable": true,
+        "maxStack": 99,
+        "description": "恢复50点魔法值"
+      },
+      {
+        "id": 2006,
+        "name": "力量药水",
+        "type": "potion",
+        "subType": "buff",
+        "rarity": "rare",
+        "price": 100,
+        "effect": {
+          "type": "buff_attack",
+          "value": 20,
+          "isPercent": true,
+          "duration": 300
+        },
+        "stackable": true,
+        "maxStack": 50,
+        "description": "5分钟内攻击力提升20%"
+      },
+      {
+        "id": 2007,
+        "name": "防御药水",
+        "type": "potion",
+        "subType": "buff",
+        "rarity": "rare",
+        "price": 100,
+        "effect": {
+          "type": "buff_defense",
+          "value": 25,
+          "isPercent": true,
+          "duration": 300
+        },
+        "stackable": true,
+        "maxStack": 50,
+        "description": "5分钟内防御力提升25%"
+      },
+      {
+        "id": 2008,
+        "name": "经验药水",
+        "type": "potion",
+        "subType": "exp",
+        "rarity": "epic",
+        "price": 200,
+        "effect": {
+          "type": "buff_exp",
+          "value": 50,
+          "isPercent": true,
+          "duration": 600
+        },
+        "stackable": true,
+        "maxStack": 20,
+        "description": "10分钟内经验获得提升50%"
+      }
+    ],
+    "materials": [
+      {
+        "id": 2101,
+        "name": "铁矿石",
+        "type": "material",
+        "subType": "ore",
+        "rarity": "common",
+        "price": 5,
+        "stackable": true,
+        "maxStack": 999,
+        "description": "用于锻造的基础矿石"
+      },
+      {
+        "id": 2102,
+        "name": "银矿石",
+        "type": "material",
+        "subType": "ore",
+        "rarity": "rare",
+        "price": 15,
+        "stackable": true,
+        "maxStack": 999,
+        "description": "珍贵的银制矿石"
+      },
+      {
+        "id": 2103,
+        "name": "金矿石",
+        "type": "material",
+        "subType": "ore",
+        "rarity": "epic",
+        "price": 50,
+        "stackable": true,
+        "maxStack": 999,
+        "description": "稀有的金制矿石"
+      },
+      {
+        "id": 2104,
+        "name": "龙鳞",
+        "type": "material",
+        "subType": "special",
+        "rarity": "legendary",
+        "price": 200,
+        "stackable": true,
+        "maxStack": 99,
+        "description": "传说中的龙鳞，极其珍贵"
+      },
+      {
+        "id": 2105,
+        "name": "魔法水晶",
+        "type": "material",
+        "subType": "crystal",
+        "rarity": "rare",
+        "price": 30,
+        "stackable": true,
+        "maxStack": 999,
+        "description": "蕴含魔法力量的水晶"
+      },
+      {
+        "id": 2106,
+        "name": "生命之花",
+        "type": "material",
+        "subType": "herb",
+        "rarity": "rare",
+        "price": 25,
+        "stackable": true,
+        "maxStack": 999,
+        "description": "制作生命药水的珍贵草药"
+      },
+      {
+        "id": 2107,
+        "name": "魔力草",
+        "type": "material",
+        "subType": "herb",
+        "rarity": "common",
+        "price": 8,
+        "stackable": true,
+        "maxStack": 999,
+        "description": "制作魔法药水的常见草药"
+      },
+      {
+        "id": 2108,
+        "name": "强化石",
+        "type": "material",
+        "subType": "enhancement",
+        "rarity": "epic",
+        "price": 100,
+        "stackable": true,
+        "maxStack": 99,
+        "description": "用于强化装备的神秘石头"
+      }
+    ],
+    "consumables": [
+      {
+        "id": 2201,
+        "name": "回城卷轴",
+        "type": "scroll",
+        "subType": "teleport",
+        "rarity": "common",
+        "price": 50,
+        "effect": {
+          "type": "teleport",
+          "target": "town"
+        },
+        "stackable": true,
+        "maxStack": 99,
+        "description": "瞬间传送回城镇"
+      },
+      {
+        "id": 2202,
+        "name": "鉴定卷轴",
+        "type": "scroll",
+        "subType": "identify",
+        "rarity": "common",
+        "price": 30,
+        "effect": {
+          "type": "identify",
+          "target": "equipment"
+        },
+        "stackable": true,
+        "maxStack": 99,
+        "description": "鉴定未知装备"
+      },
+      {
+        "id": 2203,
+        "name": "铁钥匙",
+        "type": "key",
+        "subType": "dungeon",
+        "rarity": "common",
+        "price": 20,
+        "effect": {
+          "type": "unlock",
+          "target": "iron_chest"
+        },
+        "stackable": true,
+        "maxStack": 99,
+        "description": "打开铁制宝箱的钥匙"
+      }
+    ]
+  }
+}

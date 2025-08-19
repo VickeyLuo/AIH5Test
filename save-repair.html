@@ -206,56 +206,115 @@
             document.getElementById('repairLog').innerHTML = '';
             log('创建默认存档...', 'repair');
             
-            const defaultSave = {
-                player: {
-                    class: 'warrior',
-                    level: 1,
-                    hp: 120,
-                    maxHp: 120,
-                    mp: 30,
-                    maxMp: 30,
-                    exp: 0,
-                    maxExp: 100,
-                    gold: 100,
-                    attack: [15, 25],
-                    defense: 8,
-                    equipment: {
-                        weapon: null,
-                        helmet: null,
-                        armor: null,
-                        boots: null,
-                        ring: null,
-                        necklace: null,
-                        special1: null,
-                        special2: null,
-                        special3: null,
-                        special4: null
-                    },
-                    inventory: [],
-                    materials: [],
-                    cultivation: {
-                        dropRate: { level: 0, exp: 0 },
-                        damage: { level: 0, exp: 0 },
-                        whipCorpse: { level: 0, exp: 0 }
-                    },
-                    quests: {
-                        available: [],
-                        active: [],
-                        completed: []
-                    },
-                    titles: {
-                        owned: [],
-                        current: null,
-                        scrolls: []
+            // 尝试从配置文件获取默认存档数据
+            let defaultSave = null;
+            try {
+                // 检查是否有配置管理器
+                if (window.parent && window.parent.configManager && window.parent.configManager.isInitialized()) {
+                    const initialGameState = window.parent.configManager.getInitialGameState();
+                    if (initialGameState) {
+                        defaultSave = {
+                            player: {
+                                ...initialGameState.player,
+                                class: initialGameState.player.class || 'warrior',
+                                level: initialGameState.player.level || 1,
+                                exp: initialGameState.player.exp || 0,
+                                maxExp: initialGameState.player.maxExp || 100,
+                                gold: initialGameState.player.gold || 100,
+                                equipment: {
+                                    weapon: null,
+                                    helmet: null,
+                                    armor: null,
+                                    boots: null,
+                                    ring: null,
+                                    necklace: null,
+                                    special1: null,
+                                    special2: null,
+                                    special3: null,
+                                    special4: null
+                                },
+                                inventory: [...(initialGameState.player.inventory || [])],
+                                materials: [...(initialGameState.player.materials || [])],
+                                cultivation: initialGameState.player.cultivation || {
+                                    dropRate: { level: 0, exp: 0 },
+                                    damage: { level: 0, exp: 0 },
+                                    whipCorpse: { level: 0, exp: 0 }
+                                },
+                                quests: initialGameState.player.quests || {
+                                    available: [],
+                                    active: [],
+                                    completed: []
+                                },
+                                titles: initialGameState.player.titles || {
+                                    owned: [],
+                                    current: null,
+                                    scrolls: []
+                                }
+                            },
+                            currentLocation: initialGameState.currentLocation || 1,
+                            timestamp: new Date().toLocaleString(),
+                            version: '1.0'
+                        };
+                        log('✅ 从配置文件获取默认存档数据', 'repair');
                     }
-                },
-                currentLocation: 'village',
-                timestamp: new Date().toLocaleString(),
-                version: '1.0'
-            };
+                }
+            } catch (error) {
+                log('⚠️ 无法从配置文件获取默认数据，使用内置默认值', 'repair');
+            }
+            
+            // 如果无法从配置获取，使用硬编码默认值
+            if (!defaultSave) {
+                defaultSave = {
+                    player: {
+                        class: 'warrior',
+                        level: 1,
+                        hp: 120,
+                        maxHp: 120,
+                        mp: 30,
+                        maxMp: 30,
+                        exp: 0,
+                        maxExp: 100,
+                        gold: 100,
+                        attack: [15, 25],
+                        defense: 8,
+                        equipment: {
+                            weapon: null,
+                            helmet: null,
+                            armor: null,
+                            boots: null,
+                            ring: null,
+                            necklace: null,
+                            special1: null,
+                            special2: null,
+                            special3: null,
+                            special4: null
+                        },
+                        inventory: [],
+                        materials: [],
+                        cultivation: {
+                            dropRate: { level: 0, exp: 0 },
+                            damage: { level: 0, exp: 0 },
+                            whipCorpse: { level: 0, exp: 0 }
+                        },
+                        quests: {
+                            available: [],
+                            active: [],
+                            completed: []
+                        },
+                        titles: {
+                            owned: [],
+                            current: null,
+                            scrolls: []
+                        }
+                    },
+                    currentLocation: 1,
+                    timestamp: new Date().toLocaleString(),
+                    version: '1.0'
+                };
+            }
             
             localStorage.setItem('legendSave_auto', JSON.stringify(defaultSave));
-            log('✅ 已创建默认自动存档（战士职业，等级1）', 'repair');
+            log('✅ 已创建默认自动存档', 'repair');
             log('✅ 包含完整的游戏系统：装备、背包、养成、材料、任务、称号', 'repair');
             log('你可以进入游戏直接继续游戏', 'repair');
         }
@@ -379,7 +438,7 @@
                     
                     // 检查当前位置
                     if (!data.currentLocation) {
-                        data.currentLocation = 'village';
+                        data.currentLocation = 1;
                         needRepair = true;
                         log('🔧 修复自动存档：设置默认位置为村庄', 'repair');
                     }
@@ -525,7 +584,7 @@
                         
                         // 检查当前位置
                         if (!data.currentLocation) {
-                            data.currentLocation = 'village';
+                            data.currentLocation = 1;
                             needRepair = true;
                             log(`🔧 修复存档槽${i + 1}：设置默认位置为村庄`, 'repair');
                         }
@@ -638,48 +697,95 @@
         }
         
         function createCompletePlayerData(existingData = {}) {
-            const defaultPlayer = {
-                class: 'warrior',
-                level: 1,
-                hp: 120,
-                maxHp: 120,
-                mp: 30,
-                maxMp: 30,
-                exp: 0,
-                maxExp: 100,
-                gold: 100,
-                attack: [15, 25],
-                defense: 8,
-                equipment: {
-                    weapon: null,
-                    helmet: null,
-                    armor: null,
-                    boots: null,
-                    ring: null,
-                    necklace: null,
-                    special1: null,
-                    special2: null,
-                    special3: null,
-                    special4: null
-                },
-                inventory: [],
-                materials: [],
-                cultivation: {
-                    dropRate: { level: 0, exp: 0 },
-                    damage: { level: 0, exp: 0 },
-                    whipCorpse: { level: 0, exp: 0 }
-                },
-                quests: {
-                    available: [],
-                    active: [],
-                    completed: []
-                },
-                titles: {
-                    owned: [],
-                    current: null,
-                    scrolls: []
+            // 尝试从配置文件获取默认值
+            let defaultPlayer = null;
+            try {
+                if (window.parent && window.parent.configManager && window.parent.configManager.isInitialized()) {
+                    const initialGameState = window.parent.configManager.getInitialGameState();
+                    if (initialGameState && initialGameState.player) {
+                        defaultPlayer = {
+                            ...initialGameState.player,
+                            equipment: {
+                                weapon: null,
+                                helmet: null,
+                                armor: null,
+                                boots: null,
+                                ring: null,
+                                necklace: null,
+                                special1: null,
+                                special2: null,
+                                special3: null,
+                                special4: null
+                            },
+                            inventory: [...(initialGameState.player.inventory || [])],
+                            materials: [...(initialGameState.player.materials || [])],
+                            cultivation: initialGameState.player.cultivation || {
+                                dropRate: { level: 0, exp: 0 },
+                                damage: { level: 0, exp: 0 },
+                                whipCorpse: { level: 0, exp: 0 }
+                            },
+                            quests: initialGameState.player.quests || {
+                                available: [],
+                                active: [],
+                                completed: []
+                            },
+                            titles: initialGameState.player.titles || {
+                                owned: [],
+                                current: null,
+                                scrolls: []
+                            }
+                        };
+                    }
                 }
-            };
+            } catch (error) {
+                // 忽略错误，使用硬编码默认值
+            }
+            
+            // 如果无法从配置获取，使用硬编码默认值
+            if (!defaultPlayer) {
+                defaultPlayer = {
+                    class: 'warrior',
+                    level: 1,
+                    hp: 120,
+                    maxHp: 120,
+                    mp: 30,
+                    maxMp: 30,
+                    exp: 0,
+                    maxExp: 100,
+                    gold: 100,
+                    attack: [15, 25],
+                    defense: 8,
+                    equipment: {
+                        weapon: null,
+                        helmet: null,
+                        armor: null,
+                        boots: null,
+                        ring: null,
+                        necklace: null,
+                        special1: null,
+                        special2: null,
+                        special3: null,
+                        special4: null
+                    },
+                    inventory: [],
+                    materials: [],
+                    cultivation: {
+                        dropRate: { level: 0, exp: 0 },
+                        damage: { level: 0, exp: 0 },
+                        whipCorpse: { level: 0, exp: 0 }
+                    },
+                    quests: {
+                        available: [],
+                        active: [],
+                        completed: []
+                    },
+                    titles: {
+                        owned: [],
+                        current: null,
+                        scrolls: []
+                    }
+                };
+            }
             
             // 合并现有数据和默认数据
             const player = { ...defaultPlayer };
@@ -721,7 +827,7 @@
             
             return {
                 player: player,
-                currentLocation: existingData.currentLocation || 'village',
+                currentLocation: existingData.currentLocation || 1,
                 timestamp: new Date().toLocaleString(),
                 version: '1.0'
             };

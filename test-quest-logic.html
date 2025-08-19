@@ -1,0 +1,264 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>任务逻辑测试</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .section { margin: 20px 0; padding: 15px; border: 1px solid #ccc; }
+        .log { background: #f5f5f5; padding: 10px; margin: 10px 0; font-family: monospace; white-space: pre-wrap; }
+        button { padding: 10px 20px; margin: 5px; }
+        .error { color: red; }
+        .success { color: green; }
+        .warning { color: orange; }
+        .info { color: blue; }
+    </style>
+</head>
+<body>
+    <h1>任务逻辑详细测试</h1>
+    
+    <div class="section">
+        <h2>测试步骤</h2>
+        <button onclick="step1()">1. 模拟已完成2个主线任务的状态</button>
+        <button onclick="step2()">2. 加载主线任务配置</button>
+        <button onclick="step3()">3. 执行initializeQuests逻辑</button>
+        <button onclick="step4()">4. 检查结果</button>
+        <button onclick="clearAll()">清除所有</button>
+    </div>
+    
+    <div class="section">
+        <h2>测试日志</h2>
+        <div id="log"></div>
+    </div>
+    
+    <div class="section">
+        <h2>当前状态</h2>
+        <div id="status"></div>
+    </div>
+
+    <script>
+        let testGameState = null;
+        let mainQuestChainConfig = null;
+        
+        function log(message, type = 'info') {
+            const logDiv = document.getElementById('log');
+            const timestamp = new Date().toLocaleTimeString();
+            const className = type;
+            logDiv.innerHTML += `<div class="log ${className}">[${timestamp}] ${message}</div>`;
+            logDiv.scrollTop = logDiv.scrollHeight;
+        }
+        
+        function updateStatus() {
+            const statusDiv = document.getElementById('status');
+            if (!testGameState) {
+                statusDiv.innerHTML = '<div class="error">游戏状态未初始化</div>';
+                return;
+            }
+            
+            const quests = testGameState.player.quests;
+            statusDiv.innerHTML = `
+                <h3>游戏状态</h3>
+                <p><strong>玩家等级:</strong> ${testGameState.player.level}</p>
+                <p><strong>可接任务:</strong> ${quests.available.length}个</p>
+                <p><strong>进行中任务:</strong> ${quests.active.length}个</p>
+                <p><strong>已完成任务:</strong> ${quests.completed.length}个</p>
+                
+                <h4>详细任务列表</h4>
+                <div><strong>可接任务:</strong></div>
+                <pre>${JSON.stringify(quests.available.map(q => ({id: q.id, name: q.name})), null, 2)}</pre>
+                
+                <div><strong>进行中任务:</strong></div>
+                <pre>${JSON.stringify(quests.active.map(q => ({id: q.id, name: q.name, progress: q.currentCount + '/' + q.targetCount})), null, 2)}</pre>
+                
+                <div><strong>已完成任务:</strong></div>
+                <pre>${JSON.stringify(quests.completed.map(q => ({id: q.id, name: q.name})), null, 2)}</pre>
+                
+                <h4>配置状态</h4>
+                <p><strong>配置已加载:</strong> ${mainQuestChainConfig ? '是' : '否'}</p>
+                <p><strong>配置任务数:</strong> ${mainQuestChainConfig ? mainQuestChainConfig.length : 0}</p>
+            `;
+        }
+        
+        function step1() {
+            log('=== 步骤1: 创建测试游戏状态 ===', 'info');
+            
+            testGameState = {
+                player: {
+                    name: "测试玩家",
+                    level: 5,
+                    class: "剑客",
+                    quests: {
+                        completed: [
+                            { id: 1, name: "初入江湖", type: "main", description: "第一个主线任务" },
+                            { id: 2, name: "拜师学艺", type: "main", description: "第二个主线任务" }
+                        ],
+                        active: [],
+                        available: []
+                    }
+                }
+            };
+            
+            log('已创建测试状态：玩家完成了前2个主线任务', 'success');
+            updateStatus();
+        }
+        
+        function step2() {
+            log('=== 步骤2: 加载主线任务配置 ===', 'info');
+            
+            // 模拟主线任务配置
+            mainQuestChainConfig = [
+                { id: 1, name: "初入江湖", description: "踏入武林的第一步", type: "kill", target: "野狼", targetCount: 5, rewards: { exp: 100, gold: 50 } },
+                { id: 2, name: "拜师学艺", description: "寻找师父学习武艺", type: "talk", target: "村长", targetCount: 1, rewards: { exp: 200, gold: 100 } },
+                { id: 3, name: "修炼内功", description: "开始修炼内功心法", type: "cultivate", target: "any", targetCount: 10, rewards: { exp: 300, gold: 150 } },
+                { id: 4, name: "初试身手", description: "与其他弟子切磋", type: "kill", target: "山贼", targetCount: 8, rewards: { exp: 400, gold: 200 } },
+                { id: 5, name: "下山历练", description: "离开师门，独自历练", type: "explore", target: "森林", targetCount: 1, rewards: { exp: 500, gold: 250 } }
+            ];
+            
+            log(`配置加载成功，共${mainQuestChainConfig.length}个主线任务`, 'success');
+            log('配置详情:', 'info');
+            mainQuestChainConfig.forEach((quest, index) => {
+                log(`  ${index}: ID=${quest.id}, Name=${quest.name}`, 'info');
+            });
+            updateStatus();
+        }
+        
+        function step3() {
+            log('=== 步骤3: 执行initializeQuests逻辑 ===', 'info');
+            
+            if (!testGameState || !mainQuestChainConfig) {
+                log('请先执行步骤1和2', 'error');
+                return;
+            }
+            
+            // 辅助函数
+            function isMainQuest(questId) {
+                if (!questId) return false;
+                return (typeof questId === 'number' && questId >= 1 && questId <= 20) || 
+                       (typeof questId === 'string' && questId.startsWith('main_quest_'));
+            }
+            
+            log('开始执行任务初始化逻辑...', 'info');
+            
+            // 详细检查completed数组
+            log('检查已完成任务:', 'info');
+            testGameState.player.quests.completed.forEach((quest, index) => {
+                const isMain = isMainQuest(quest.id);
+                log(`  completed[${index}]: ID=${quest.id} (${typeof quest.id}), Name=${quest.name}, IsMain=${isMain}`, 'info');
+            });
+            
+            // 清空现有可接任务
+            log('清空现有可接任务...', 'warning');
+            testGameState.player.quests.available = [];
+            
+            // 找到下一个可接取的主线任务
+            const completedMainQuests = testGameState.player.quests.completed.filter(q => isMainQuest(q.id));
+            const activeMainQuests = testGameState.player.quests.active.filter(q => isMainQuest(q.id));
+            
+            log(`已完成主线任务: ${completedMainQuests.length}个`, 'info');
+            log(`进行中主线任务: ${activeMainQuests.length}个`, 'info');
+            
+            // 计算已完成的主线任务数量
+            const completedCount = completedMainQuests.length;
+            const nextQuestIndex = completedCount; // 下一个任务的索引
+            
+            log(`计算结果:`, 'info');
+            log(`  completedCount = ${completedCount}`, 'info');
+            log(`  nextQuestIndex = ${nextQuestIndex}`, 'info');
+            log(`  配置总任务数 = ${mainQuestChainConfig.length}`, 'info');
+            log(`  还有更多任务? ${nextQuestIndex < mainQuestChainConfig.length}`, 'info');
+            
+            // 检查是否需要添加主线任务
+            if (nextQuestIndex < mainQuestChainConfig.length && activeMainQuests.length === 0) {
+                const nextQuest = {...mainQuestChainConfig[nextQuestIndex]};
+                nextQuest.currentCount = 0;
+                
+                log(`准备添加下一个任务:`, 'success');
+                log(`  任务ID: ${nextQuest.id}`, 'info');
+                log(`  任务名称: ${nextQuest.name}`, 'info');
+                log(`  任务描述: ${nextQuest.description}`, 'info');
+                
+                // 检查这个任务是否已经存在
+                const alreadyCompleted = testGameState.player.quests.completed.some(q => q.id === nextQuest.id);
+                const alreadyActive = testGameState.player.quests.active.some(q => q.id === nextQuest.id);
+                
+                log(`  已完成检查: ${alreadyCompleted}`, 'info');
+                log(`  进行中检查: ${alreadyActive}`, 'info');
+                
+                if (!alreadyCompleted && !alreadyActive) {
+                    testGameState.player.quests.available.push(nextQuest);
+                    log(`✅ 成功添加任务: ${nextQuest.name}`, 'success');
+                } else {
+                    log(`❌ 跳过添加任务，原因: ${alreadyCompleted ? '已完成' : ''}${alreadyActive ? '进行中' : ''}`, 'error');
+                }
+            } else {
+                log(`❌ 不添加任务，原因:`, 'warning');
+                if (nextQuestIndex >= mainQuestChainConfig.length) {
+                    log(`  所有任务已完成 (${nextQuestIndex} >= ${mainQuestChainConfig.length})`, 'warning');
+                }
+                if (activeMainQuests.length > 0) {
+                    log(`  有进行中的主线任务 (${activeMainQuests.length}个)`, 'warning');
+                }
+            }
+            
+            updateStatus();
+        }
+        
+        function step4() {
+            log('=== 步骤4: 检查最终结果 ===', 'info');
+            
+            if (!testGameState) {
+                log('请先执行前面的步骤', 'error');
+                return;
+            }
+            
+            const quests = testGameState.player.quests;
+            
+            log('最终结果分析:', 'info');
+            log(`可接任务数量: ${quests.available.length}`, quests.available.length > 0 ? 'success' : 'error');
+            log(`进行中任务数量: ${quests.active.length}`, 'info');
+            log(`已完成任务数量: ${quests.completed.length}`, 'info');
+            
+            if (quests.available.length > 0) {
+                log('可接任务详情:', 'success');
+                quests.available.forEach(q => {
+                    log(`  - ${q.name} (ID: ${q.id})`, 'success');
+                });
+            } else {
+                log('❌ 没有可接任务！这可能是问题所在', 'error');
+            }
+            
+            // 模拟updateMainQuestDisplay的逻辑
+            log('模拟主线任务显示逻辑:', 'info');
+            
+            function isMainQuest(questId) {
+                if (!questId) return false;
+                return (typeof questId === 'number' && questId >= 1 && questId <= 20) || 
+                       (typeof questId === 'string' && questId.startsWith('main_quest_'));
+            }
+            
+            const activeMainQuest = quests.active.find(q => isMainQuest(q.id));
+            const availableMainQuest = quests.available.find(q => isMainQuest(q.id));
+            
+            if (activeMainQuest) {
+                log(`显示进行中的主线任务: ${activeMainQuest.name}`, 'success');
+            } else if (availableMainQuest) {
+                log(`显示可接取的主线任务: ${availableMainQuest.name}`, 'success');
+            } else {
+                log(`❌ 显示"所有任务已完成" - 这就是用户看到的错误信息！`, 'error');
+            }
+        }
+        
+        function clearAll() {
+            testGameState = null;
+            mainQuestChainConfig = null;
+            document.getElementById('log').innerHTML = '';
+            updateStatus();
+            log('已清除所有数据', 'info');
+        }
+        
+        // 页面加载时初始化
+        updateStatus();
+    </script>
+</body>
+</html>

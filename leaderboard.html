@@ -1,0 +1,536 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>传奇游戏 - 排行榜</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
+    <script>
+        // 动态加载network-manager.js避免缓存
+        const script = document.createElement('script');
+        script.src = './network-manager.js?v=' + Date.now();
+        document.head.appendChild(script);
+    </script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@400;500;600;700&display=swap');
+        
+        body {
+            font-family: 'Inter', 'Noto Sans SC', sans-serif;
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+            min-height: 100vh;
+        }
+        
+        .leaderboard-card {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+        
+        .rank-badge {
+            background: linear-gradient(45deg, #ffd700, #ffed4e);
+            color: #1a1a2e;
+            font-weight: bold;
+        }
+        
+        .rank-2 {
+            background: linear-gradient(45deg, #c0c0c0, #e5e5e5);
+        }
+        
+        .rank-3 {
+            background: linear-gradient(45deg, #cd7f32, #daa520);
+        }
+        
+        .player-row:hover {
+            background: rgba(255, 255, 255, 0.1);
+            transform: translateY(-2px);
+            transition: all 0.3s ease;
+        }
+        
+        .tab-button {
+            transition: all 0.3s ease;
+        }
+        
+        .tab-button.active {
+            background: linear-gradient(45deg, #3b82f6, #1d4ed8);
+            color: white;
+        }
+        
+        .loading-spinner {
+            border: 3px solid rgba(255, 255, 255, 0.3);
+            border-radius: 50%;
+            border-top: 3px solid #3b82f6;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        .class-warrior { color: #ef4444; }
+        .class-mage { color: #3b82f6; }
+        .class-taoist { color: #10b981; }
+    </style>
+</head>
+<body>
+    <div class="container mx-auto px-4 py-8">
+        <!-- 头部 -->
+        <div class="text-center mb-8">
+            <h1 class="text-4xl font-bold text-white mb-4">🏆 传奇排行榜</h1>
+            <p class="text-gray-300">查看服务器中最强的玩家</p>
+        </div>
+        
+        <!-- 导航按钮 -->
+        <div class="flex justify-center mb-6">
+            <button onclick="window.location.href='legend-text.html'" 
+                    class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg transition-colors">
+                🎮 返回游戏
+            </button>
+        </div>
+        
+        <!-- 排行榜标签 -->
+        <div class="flex justify-center mb-6">
+            <div class="bg-gray-800 rounded-lg p-1 flex flex-wrap gap-1">
+                <button id="levelTab" class="tab-button px-4 py-2 rounded-md active" onclick="switchTab('level')">
+                    🏆 等级排行
+                </button>
+                <button id="goldTab" class="tab-button px-4 py-2 rounded-md" onclick="switchTab('gold')">
+                    💰 财富排行
+                </button>
+                <button id="monstersTab" class="tab-button px-4 py-2 rounded-md" onclick="switchTab('monsters')">
+                    ⚔️ 击杀排行
+                </button>
+                <button id="questsTab" class="tab-button px-4 py-2 rounded-md" onclick="switchTab('quests')">
+                    📜 任务排行
+                </button>
+                <button id="damageTab" class="tab-button px-4 py-2 rounded-md" onclick="switchTab('damage')">
+                    💥 伤害排行
+                </button>
+                <button id="onlineTab" class="tab-button px-4 py-2 rounded-md" onclick="switchTab('online')">
+                    🟢 在线玩家
+                </button>
+            </div>
+        </div>
+        
+        <!-- 加载状态 -->
+        <div id="loadingState" class="text-center py-12">
+            <div class="loading-spinner mx-auto mb-4"></div>
+            <p class="text-gray-300">正在加载排行榜数据...</p>
+        </div>
+        
+        <!-- 排行榜内容 -->
+        <div id="leaderboardContent" class="hidden">
+            <div class="leaderboard-card rounded-lg p-6 max-w-4xl mx-auto">
+                <div id="leaderboardList" class="space-y-3">
+                    <!-- 排行榜数据将在这里动态生成 -->
+                </div>
+            </div>
+        </div>
+        
+        <!-- 错误状态 -->
+        <div id="errorState" class="hidden text-center py-12">
+            <div class="text-red-400 text-6xl mb-4">⚠️</div>
+            <h3 class="text-xl font-bold text-white mb-2">连接失败</h3>
+            <p class="text-gray-300 mb-4">无法连接到游戏服务器</p>
+            <button onclick="initializeLeaderboard()" 
+                    class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg transition-colors">
+                重试连接
+            </button>
+        </div>
+        
+        <!-- 玩家详情模态框 -->
+        <div id="playerDetailModal" class="fixed inset-0 bg-black bg-opacity-50 hidden flex items-center justify-center z-50">
+            <div class="leaderboard-card rounded-lg p-6 max-w-md w-full mx-4">
+                <div class="flex justify-between items-center mb-4">
+                    <h3 class="text-xl font-bold text-white">玩家详情</h3>
+                    <button onclick="closePlayerDetail()" class="text-gray-400 hover:text-white text-2xl">&times;</button>
+                </div>
+                <div id="playerDetailContent">
+                    <!-- 玩家详情内容 -->
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        let networkManager = null;
+        let currentTab = 'level';
+        let leaderboardData = {};
+        
+        // 初始化排行榜
+        async function initializeLeaderboard() {
+            try {
+                showLoadingState();
+                
+                // 初始化网络管理器
+                networkManager = new NetworkManager();
+                
+                // 设置事件监听器
+                networkManager.on('connected', () => {
+                    console.log('已连接到服务器');
+                    loadLeaderboardData();
+                });
+                
+                networkManager.on('disconnected', () => {
+                    console.log('与服务器断开连接');
+                    showErrorState();
+                });
+                
+                networkManager.on('leaderboard_data', (data) => {
+                    console.log('收到排行榜数据:', data);
+                    leaderboardData[data.type] = data.players;
+                    displayLeaderboard(data.type, data.players);
+                });
+                
+                networkManager.on('online_players', (data) => {
+                    console.log('收到在线玩家数据:', data);
+                    leaderboardData['online'] = data.players;
+                    if (currentTab === 'online') {
+                        displayOnlinePlayers(data.players);
+                    }
+                });
+                
+                // 连接到服务器
+                await networkManager.connect();
+                
+            } catch (error) {
+                console.error('初始化排行榜失败:', error);
+                showErrorState();
+            }
+        }
+        
+        // 加载排行榜数据
+        async function loadLeaderboardData() {
+            if (!networkManager || !networkManager.isConnected()) {
+                showErrorState();
+                return;
+            }
+            
+            // 请求当前标签的数据
+            if (currentTab === 'online') {
+                networkManager.getOnlinePlayers();
+            } else {
+                try {
+                    const result = await networkManager.getRankings(currentTab, 50);
+                    if (result.success) {
+                        // 缓存数据 - 服务器返回的是 {success, rankings, total} 格式
+                        const rankings = result.rankings || result.data || [];
+                        leaderboardData[currentTab] = rankings;
+                        displayLeaderboard(currentTab, rankings);
+                    } else {
+                        console.error('获取排行榜失败:', result.error);
+                        showErrorState();
+                    }
+                } catch (error) {
+                    console.error('获取排行榜错误:', error);
+                    showErrorState();
+                }
+            }
+        }
+        
+        // 切换标签
+        function switchTab(tabName) {
+            // 更新标签样式
+            document.querySelectorAll('.tab-button').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            document.getElementById(tabName + 'Tab').classList.add('active');
+            
+            currentTab = tabName;
+            
+            // 如果已有数据，直接显示
+            if (leaderboardData[tabName]) {
+                if (tabName === 'online') {
+                    displayOnlinePlayers(leaderboardData[tabName]);
+                } else {
+                    displayLeaderboard(tabName, leaderboardData[tabName]);
+                }
+            } else {
+                // 否则重新加载数据
+                showLoadingState();
+                loadLeaderboardData();
+            }
+        }
+        
+        // 显示排行榜
+        function displayLeaderboard(type, players) {
+            const container = document.getElementById('leaderboardList');
+            container.innerHTML = '';
+            
+            if (!players || players.length === 0) {
+                container.innerHTML = '<div class="text-center text-gray-400 py-8">暂无排行榜数据</div>';
+                showContent();
+                return;
+            }
+            
+            players.forEach((player, index) => {
+                const rank = index + 1;
+                const playerRow = createPlayerRow(player, rank, type);
+                container.appendChild(playerRow);
+            });
+            
+            showContent();
+        }
+        
+        // 显示在线玩家
+        function displayOnlinePlayers(players) {
+            const container = document.getElementById('leaderboardList');
+            container.innerHTML = '';
+            
+            if (!players || players.length === 0) {
+                container.innerHTML = '<div class="text-center text-gray-400 py-8">当前无在线玩家</div>';
+                showContent();
+                return;
+            }
+            
+            // 添加标题
+            const header = document.createElement('div');
+            header.className = 'text-center text-white font-bold text-lg mb-4';
+            header.textContent = `当前在线玩家 (${players.length}人)`;
+            container.appendChild(header);
+            
+            players.forEach((player, index) => {
+                const playerRow = createOnlinePlayerRow(player, index + 1);
+                container.appendChild(playerRow);
+            });
+            
+            showContent();
+        }
+        
+        // 创建玩家行
+        function createPlayerRow(player, rank, type) {
+            const div = document.createElement('div');
+            div.className = 'player-row flex items-center justify-between p-4 rounded-lg cursor-pointer';
+            div.onclick = () => showPlayerDetail(player);
+            
+            const rankBadgeClass = rank <= 3 ? `rank-badge rank-${rank}` : 'bg-gray-600 text-white';
+            
+            // 从服务器返回的数据结构中提取玩家信息
+            const playerData = player.gameState?.player || {};
+            const playerStats = player.stats || {};
+            const classColor = getClassColor(playerData.class);
+            
+            let valueText = '';
+            switch (type) {
+                case 'level':
+                    valueText = `等级 ${playerData.level || 1}`;
+                    break;
+                case 'gold':
+                    valueText = `${formatNumber(playerData.gold || 0)} 金币`;
+                    break;
+                case 'monsters':
+                    valueText = `击杀 ${formatNumber(playerStats.monstersKilled || 0)} 怪物`;
+                    break;
+                case 'quests':
+                    valueText = `完成 ${formatNumber(playerStats.questsCompleted || 0)} 任务`;
+                    break;
+                case 'damage':
+                    valueText = `最高伤害 ${formatNumber(playerStats.highestDamage || 0)}`;
+                    break;
+                default:
+                    valueText = `等级 ${playerData.level || 1}`;
+            }
+            
+            // 在线状态显示
+            const onlineStatus = player.isOnline ? 
+                '<span class="text-green-400 text-xs">●在线</span>' : 
+                '<span class="text-gray-500 text-xs">●离线</span>';
+            
+            div.innerHTML = `
+                <div class="flex items-center space-x-4">
+                    <div class="${rankBadgeClass} w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold">
+                        ${rank}
+                    </div>
+                    <div>
+                        <div class="text-white font-semibold">${player.username}</div>
+                        <div class="text-sm ${classColor}">${getClassName(playerData.class)} ${onlineStatus}</div>
+                    </div>
+                </div>
+                <div class="text-right">
+                    <div class="text-white font-semibold">${valueText}</div>
+                    <div class="text-sm text-gray-400">点击查看详情</div>
+                </div>
+            `;
+            
+            return div;
+        }
+        
+        // 创建在线玩家行
+        function createOnlinePlayerRow(player, index) {
+            const div = document.createElement('div');
+            div.className = 'player-row flex items-center justify-between p-4 rounded-lg cursor-pointer';
+            div.onclick = () => showPlayerDetail(player);
+            
+            const classColor = getClassColor(player.class);
+            
+            div.innerHTML = `
+                <div class="flex items-center space-x-4">
+                    <div class="w-3 h-3 bg-green-400 rounded-full"></div>
+                    <div>
+                        <div class="text-white font-semibold">${player.username}</div>
+                        <div class="text-sm ${classColor}">${getClassName(player.class)} - 等级 ${player.level}</div>
+                    </div>
+                </div>
+                <div class="text-right">
+                    <div class="text-green-400 text-sm">在线</div>
+                    <div class="text-xs text-gray-400">点击查看详情</div>
+                </div>
+            `;
+            
+            return div;
+        }
+        
+        // 显示玩家详情
+        function showPlayerDetail(player) {
+            const modal = document.getElementById('playerDetailModal');
+            const content = document.getElementById('playerDetailContent');
+            
+            // 从服务器返回的数据结构中提取玩家信息
+            const playerData = player.gameState?.player || {};
+            const playerStats = player.stats || {};
+            const classColor = getClassColor(playerData.class);
+            
+            // 在线状态
+            const onlineStatusText = player.isOnline ? 
+                '<span class="text-green-400">🟢 在线</span>' : 
+                '<span class="text-gray-500">⚫ 离线</span>';
+            
+            // 最后登录时间
+            const lastLoginText = player.lastLoginTime ? 
+                new Date(player.lastLoginTime).toLocaleString('zh-CN') : '未知';
+            
+            content.innerHTML = `
+                <div class="space-y-4">
+                    <div class="text-center">
+                        <h4 class="text-2xl font-bold text-white mb-2">${player.username}</h4>
+                        <p class="${classColor} font-semibold">${getClassName(playerData.class)}</p>
+                        <p class="text-sm mt-2">${onlineStatusText}</p>
+                    </div>
+                    
+                    <div class="grid grid-cols-2 gap-4">
+                        <div class="bg-gray-800 p-3 rounded">
+                            <div class="text-gray-400 text-sm">等级</div>
+                            <div class="text-white font-bold text-lg">${playerData.level || 1}</div>
+                        </div>
+                        <div class="bg-gray-800 p-3 rounded">
+                            <div class="text-gray-400 text-sm">经验值</div>
+                            <div class="text-white font-bold text-lg">${formatNumber(playerData.exp || 0)}</div>
+                        </div>
+                        <div class="bg-gray-800 p-3 rounded">
+                            <div class="text-gray-400 text-sm">金币</div>
+                            <div class="text-white font-bold text-lg">${formatNumber(playerData.gold || 0)}</div>
+                        </div>
+                        <div class="bg-gray-800 p-3 rounded">
+                            <div class="text-gray-400 text-sm">攻击力</div>
+                            <div class="text-white font-bold text-lg">${playerData.attack || 0}</div>
+                        </div>
+                    </div>
+                    
+                    <div class="bg-gray-800 p-4 rounded">
+                        <h5 class="text-white font-semibold mb-3">游戏统计</h5>
+                        <div class="grid grid-cols-2 gap-3 text-sm">
+                            <div class="text-gray-300">
+                                <span class="text-gray-400">击杀怪物:</span> ${formatNumber(playerStats.monstersKilled || 0)}
+                            </div>
+                            <div class="text-gray-300">
+                                <span class="text-gray-400">完成任务:</span> ${formatNumber(playerStats.questsCompleted || 0)}
+                            </div>
+                            <div class="text-gray-300">
+                                <span class="text-gray-400">最高伤害:</span> ${formatNumber(playerStats.highestDamage || 0)}
+                            </div>
+                            <div class="text-gray-300">
+                                <span class="text-gray-400">游戏时长:</span> ${formatNumber(playerStats.totalPlayTime || 0)}分钟
+                            </div>
+                        </div>
+                    </div>
+                    
+                    ${playerData.equipment ? `
+                    <div class="bg-gray-800 p-4 rounded">
+                        <h5 class="text-white font-semibold mb-3">装备信息</h5>
+                        <div class="grid grid-cols-2 gap-2 text-sm text-gray-300">
+                            <div>武器: ${playerData.equipment.weapon?.name || '无'}</div>
+                            <div>头盔: ${playerData.equipment.helmet?.name || '无'}</div>
+                            <div>护甲: ${playerData.equipment.armor?.name || '无'}</div>
+                            <div>靴子: ${playerData.equipment.boots?.name || '无'}</div>
+                        </div>
+                    </div>
+                    ` : ''}
+                    
+                    <div class="text-center text-xs text-gray-500">
+                        最后登录: ${lastLoginText}
+                    </div>
+                </div>
+            `;
+            
+            modal.classList.remove('hidden');
+        }
+        
+        // 关闭玩家详情
+        function closePlayerDetail() {
+            document.getElementById('playerDetailModal').classList.add('hidden');
+        }
+        
+        // 工具函数
+        function getClassName(classType) {
+            const classNames = {
+                'warrior': '战士',
+                'mage': '法师',
+                'taoist': '道士'
+            };
+            return classNames[classType] || classType;
+        }
+        
+        function getClassColor(classType) {
+            const colors = {
+                'warrior': 'class-warrior',
+                'mage': 'class-mage',
+                'taoist': 'class-taoist'
+            };
+            return colors[classType] || 'text-gray-400';
+        }
+        
+        function formatNumber(num) {
+            if (num >= 1000000) {
+                return (num / 1000000).toFixed(1) + 'M';
+            } else if (num >= 1000) {
+                return (num / 1000).toFixed(1) + 'K';
+            }
+            return num.toString();
+        }
+        
+        function showLoadingState() {
+            document.getElementById('loadingState').classList.remove('hidden');
+            document.getElementById('leaderboardContent').classList.add('hidden');
+            document.getElementById('errorState').classList.add('hidden');
+        }
+        
+        function showContent() {
+            document.getElementById('loadingState').classList.add('hidden');
+            document.getElementById('leaderboardContent').classList.remove('hidden');
+            document.getElementById('errorState').classList.add('hidden');
+        }
+        
+        function showErrorState() {
+            document.getElementById('loadingState').classList.add('hidden');
+            document.getElementById('leaderboardContent').classList.add('hidden');
+            document.getElementById('errorState').classList.remove('hidden');
+        }
+        
+        // 页面加载时初始化
+        window.addEventListener('load', () => {
+            initializeLeaderboard();
+        });
+        
+        // 定期刷新数据
+        setInterval(() => {
+            if (networkManager && networkManager.isConnected()) {
+                loadLeaderboardData();
+            }
+        }, 30000); // 每30秒刷新一次
+    </script>
+</body>
+</html>

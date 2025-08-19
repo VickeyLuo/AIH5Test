@@ -1,0 +1,219 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>装备卸下功能测试</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-900 text-white p-8">
+    <div class="max-w-4xl mx-auto">
+        <h1 class="text-2xl font-bold mb-6">装备卸下功能测试</h1>
+        
+        <!-- 装备槽位 -->
+        <div class="bg-gray-800 rounded-lg p-4 mb-6">
+            <h3 class="text-lg font-bold text-blue-400 mb-3">当前装备</h3>
+            <div class="grid grid-cols-2 gap-3 text-sm">
+                <div class="equipment-slot rounded p-2 bg-gray-700">
+                    <div class="text-gray-400 text-xs mb-1">武器</div>
+                    <div id="weapon" class="text-white">无</div>
+                </div>
+                <div class="equipment-slot rounded p-2 bg-gray-700">
+                    <div class="text-gray-400 text-xs mb-1">头盔</div>
+                    <div id="helmet" class="text-white">无</div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- 测试按钮 -->
+        <div class="bg-gray-800 rounded-lg p-4 mb-6">
+            <h3 class="text-lg font-bold text-green-400 mb-3">测试操作</h3>
+            <div class="space-x-4">
+                <button onclick="equipTestWeapon()" class="bg-blue-600 hover:bg-blue-700 px-4 py-2 rounded">装备测试武器</button>
+                <button onclick="equipTestHelmet()" class="bg-green-600 hover:bg-green-700 px-4 py-2 rounded">装备测试头盔</button>
+                <button onclick="clearAll()" class="bg-red-600 hover:bg-red-700 px-4 py-2 rounded">清空所有装备</button>
+            </div>
+        </div>
+        
+        <!-- 日志 -->
+        <div class="bg-gray-800 rounded-lg p-4">
+            <h3 class="text-lg font-bold text-yellow-400 mb-3">操作日志</h3>
+            <div id="log" class="text-sm text-gray-300 h-32 overflow-y-auto"></div>
+        </div>
+    </div>
+    
+    <script>
+        // 模拟游戏状态
+        let gameState = {
+            player: {
+                equipment: {
+                    weapon: null,
+                    helmet: null
+                },
+                inventory: []
+            }
+        };
+        
+        // 测试装备数据 - 从配置文件获取
+        let testWeapon = null;
+        let testHelmet = null;
+        
+        // 获取测试装备数据
+        function getTestEquipmentData() {
+            // 尝试从配置文件获取
+            if (window.configManager && window.configManager.isInitialized()) {
+                try {
+                    const testEquipment = window.configManager.getTestEquipment();
+                    if (testEquipment) {
+                        testWeapon = testEquipment.weapon || getDefaultTestWeapon();
+                        testHelmet = testEquipment.helmet || getDefaultTestHelmet();
+                        return;
+                    }
+                } catch (error) {
+                    console.warn('无法从配置获取测试装备，使用默认装备');
+                }
+            }
+            
+            // 使用默认装备
+            testWeapon = getDefaultTestWeapon();
+            testHelmet = getDefaultTestHelmet();
+        }
+        
+        function getDefaultTestWeapon() {
+            return {
+                name: '测试剑',
+                rarity: 'common',
+                attack: [10, 20]
+            };
+        }
+        
+        function getDefaultTestHelmet() {
+            return {
+                name: '测试头盔',
+                rarity: 'rare',
+                defense: 5
+            };
+        }
+        
+        function addLog(message) {
+            const log = document.getElementById('log');
+            const time = new Date().toLocaleTimeString();
+            log.innerHTML += `<div>[${time}] ${message}</div>`;
+            log.scrollTop = log.scrollHeight;
+        }
+        
+        function updateEquipmentDisplay() {
+            console.log('更新装备显示开始');
+            const equipment = gameState.player.equipment;
+            
+            const equipmentSlots = [
+                { id: 'weapon', key: 'weapon', name: '武器' },
+                { id: 'helmet', key: 'helmet', name: '头盔' }
+            ];
+            
+            equipmentSlots.forEach(slot => {
+                const element = document.getElementById(slot.id);
+                const item = equipment[slot.key];
+                
+                if (!element) {
+                    console.error(`装备槽位元素未找到: ${slot.id}`);
+                    return;
+                }
+                
+                // 获取外层的装备槽位容器
+                const slotContainer = element.parentElement;
+                
+                if (item) {
+                    console.log(`更新装备槽位 ${slot.key}:`, item.name);
+                    element.innerHTML = `<span class="item-${item.rarity}">${item.name}</span>`;
+                    element.style.color = '';
+                    
+                    // 在外层容器上设置样式和事件
+                    if (slotContainer) {
+                        console.log(`为装备槽位 ${slot.key} 设置点击事件，容器类名:`, slotContainer.className);
+                        slotContainer.style.cursor = 'pointer';
+                        slotContainer.title = `点击卸下${slot.name}`;
+                        slotContainer.style.border = '2px solid #60a5fa';
+                        
+                        // 移除之前的事件监听器
+                        slotContainer.onclick = null;
+                        
+                        // 添加卸下装备的点击事件到整个槽位容器
+                        slotContainer.onclick = (e) => {
+                            console.log(`点击卸下装备: ${slot.name}`, e.target);
+                            e.preventDefault();
+                            e.stopPropagation();
+                            unequipItem(slot.key, slot.name);
+                        };
+                    } else {
+                        console.error(`装备槽位 ${slot.key} 的外层容器未找到`);
+                    }
+                } else {
+                    console.log(`清空装备槽位 ${slot.key}`);
+                    element.innerHTML = '无';
+                    element.style.color = '#9ca3af';
+                    
+                    // 清除外层容器的样式和事件
+                    if (slotContainer) {
+                        slotContainer.style.cursor = 'default';
+                        slotContainer.title = '';
+                        slotContainer.style.border = '';
+                        slotContainer.onclick = null;
+                    }
+                }
+            });
+            console.log('装备显示更新完成');
+        }
+        
+        function unequipItem(slotKey, slotName) {
+            const equipment = gameState.player.equipment;
+            const item = equipment[slotKey];
+            
+            if (!item) {
+                addLog(`${slotName}槽位没有装备`);
+                return;
+            }
+            
+            // 将装备放回背包
+            gameState.player.inventory.push(item);
+            equipment[slotKey] = null;
+            
+            addLog(`卸下了${item.name}`);
+            updateEquipmentDisplay();
+        }
+        
+        function equipTestWeapon() {
+            if (gameState.player.equipment.weapon) {
+                gameState.player.inventory.push(gameState.player.equipment.weapon);
+            }
+            gameState.player.equipment.weapon = testWeapon;
+            addLog(`装备了${testWeapon.name}`);
+            updateEquipmentDisplay();
+        }
+        
+        function equipTestHelmet() {
+            if (gameState.player.equipment.helmet) {
+                gameState.player.inventory.push(gameState.player.equipment.helmet);
+            }
+            gameState.player.equipment.helmet = testHelmet;
+            addLog(`装备了${testHelmet.name}`);
+            updateEquipmentDisplay();
+        }
+        
+        function clearAll() {
+            gameState.player.equipment.weapon = null;
+            gameState.player.equipment.helmet = null;
+            addLog('清空所有装备');
+            updateEquipmentDisplay();
+        }
+        
+        // 初始化
+        window.onload = function() {
+            // 初始化测试装备数据
+            getTestEquipmentData();
+            addLog('装备卸下功能测试页面已加载');
+            updateEquipmentDisplay();
+        };
+    </script>
+</body>
+</html>

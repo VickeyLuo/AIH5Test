@@ -1,0 +1,49 @@
+{
+  "type": "monster_drops",
+  "version": "4.0.0",
+  "timestamp": "2024-01-01T00:00:00.000Z",
+  "data": {
+    "monsterDrops": {
+      "1001": {
+        "monsterName": "史莱姆",
+        "dropIds": "gold,3|2001,1|2101,2",
+        "dropRate": 1.0
+      },
+      "1002": {
+        "monsterName": "哥布林",
+        "dropIds": "gold,5|2001,1|2101,2",
+        "dropRate": 1.0
+      },
+      "1003": {
+        "monsterName": "骷髅兵",
+        "dropIds": "gold,8|2001,1|2101,2",
+        "dropRate": 1.0
+      },
+      "1004": {
+        "monsterName": "兽人战士",
+        "dropIds": "gold,15|2002,2|2102,2",
+        "dropRate": 1.0
+      },
+      "1005": {
+        "monsterName": "暗影刺客",
+        "dropIds": "gold,30|2003,3|2103,2|2105,1",
+        "dropRate": 1.0
+      },
+      "1006": {
+        "monsterName": "火焰法师",
+        "dropIds": "gold,30|2003,3|2103,2|2105,3",
+        "dropRate": 1.0
+      },
+      "1007": {
+        "monsterName": "哥布林王",
+        "dropIds": "gold,100|2008,1|2104,2|2203,1",
+        "dropRate": 1.0
+      },
+      "1008": {
+        "monsterName": "古龙",
+        "dropIds": "gold,500|2008,3|2104,5|2108,3",
+        "dropRate": 1.0
+      }
+    }
+  }
+}

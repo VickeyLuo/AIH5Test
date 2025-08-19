@@ -1,0 +1,522 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>任务状态调试工具</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body {
+            font-family: 'Microsoft YaHei', sans-serif;
+            background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+            min-height: 100vh;
+        }
+        .debug-panel {
+            background: rgba(0, 0, 0, 0.8);
+            border: 1px solid #444;
+            border-radius: 8px;
+            padding: 20px;
+            margin: 10px;
+        }
+        .quest-item {
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid #666;
+            border-radius: 4px;
+            padding: 10px;
+            margin: 5px 0;
+        }
+        .main-quest {
+            border-color: #ffd700;
+            background: rgba(255, 215, 0, 0.1);
+        }
+        .side-quest {
+            border-color: #87ceeb;
+            background: rgba(135, 206, 235, 0.1);
+        }
+        pre {
+            background: #1a1a1a;
+            border: 1px solid #444;
+            border-radius: 4px;
+            padding: 10px;
+            overflow-x: auto;
+            font-size: 12px;
+        }
+    </style>
+</head>
+<body class="text-white">
+    <div class="container mx-auto p-4">
+        <h1 class="text-3xl font-bold text-center mb-6 text-yellow-400">🔍 任务状态调试工具</h1>
+        
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
+            <!-- 当前状态面板 -->
+            <div class="debug-panel">
+                <h2 class="text-xl font-bold mb-4 text-green-400">📊 当前游戏状态</h2>
+                <div class="space-y-2">
+                    <div>当前账号: <span id="currentAccount" class="text-yellow-300">未登录</span></div>
+                    <div>当前角色: <span id="currentCharacter" class="text-yellow-300">未选择</span></div>
+                    <div>角色等级: <span id="characterLevel" class="text-yellow-300">-</span></div>
+                    <div>角色职业: <span id="characterClass" class="text-yellow-300">-</span></div>
+                </div>
+                
+                <h3 class="text-lg font-bold mt-4 mb-2 text-blue-400">任务统计</h3>
+                <div class="grid grid-cols-3 gap-2 text-center">
+                    <div class="bg-green-600 p-2 rounded">
+                        <div class="text-sm">可接任务</div>
+                        <div id="availableCount" class="text-xl font-bold">0</div>
+                    </div>
+                    <div class="bg-blue-600 p-2 rounded">
+                        <div class="text-sm">进行中</div>
+                        <div id="activeCount" class="text-xl font-bold">0</div>
+                    </div>
+                    <div class="bg-gray-600 p-2 rounded">
+                        <div class="text-sm">已完成</div>
+                        <div id="completedCount" class="text-xl font-bold">0</div>
+                    </div>
+                </div>
+                
+                <div class="mt-4">
+                    <button onclick="refreshStatus()" class="bg-blue-600 hover:bg-blue-700 px-4 py-2 rounded mr-2">🔄 刷新状态</button>
+                    <button onclick="clearCache()" class="bg-red-600 hover:bg-red-700 px-4 py-2 rounded mr-2">🗑️ 清除缓存</button>
+                    <button onclick="exportData()" class="bg-green-600 hover:bg-green-700 px-4 py-2 rounded mr-2">📤 导出数据</button>
+                    <button onclick="switchToAccountSelection()" class="bg-purple-600 hover:bg-purple-700 px-4 py-2 rounded">🔄 重新选择账号</button>
+                </div>
+            </div>
+            
+            <!-- 任务详情面板 -->
+            <div class="debug-panel">
+                <h2 class="text-xl font-bold mb-4 text-green-400">📋 任务详情</h2>
+                
+                <div class="mb-4">
+                    <h3 class="text-lg font-bold mb-2 text-yellow-400">🎯 可接任务</h3>
+                    <div id="availableQuests" class="max-h-40 overflow-y-auto"></div>
+                </div>
+                
+                <div class="mb-4">
+                    <h3 class="text-lg font-bold mb-2 text-blue-400">⚡ 进行中任务</h3>
+                    <div id="activeQuests" class="max-h-40 overflow-y-auto"></div>
+                </div>
+                
+                <div>
+                    <h3 class="text-lg font-bold mb-2 text-gray-400">✅ 已完成任务</h3>
+                    <div id="completedQuests" class="max-h-40 overflow-y-auto"></div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- 原始数据面板 -->
+        <div class="debug-panel mt-4">
+            <h2 class="text-xl font-bold mb-4 text-green-400">🔧 原始数据</h2>
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                <div>
+                    <h3 class="text-lg font-bold mb-2 text-yellow-400">localStorage 数据</h3>
+                    <pre id="localStorageData" class="text-xs">暂无数据</pre>
+                </div>
+                <div>
+                    <h3 class="text-lg font-bold mb-2 text-yellow-400">gameState 数据</h3>
+                    <pre id="gameStateData" class="text-xs">暂无数据</pre>
+                </div>
+            </div>
+        </div>
+        
+        <!-- 操作日志面板 -->
+        <div class="debug-panel mt-4">
+            <h2 class="text-xl font-bold mb-4 text-green-400">📝 操作日志</h2>
+            <div class="flex mb-2">
+                <button onclick="clearLog()" class="bg-red-600 hover:bg-red-700 px-3 py-1 rounded text-sm">清除日志</button>
+            </div>
+            <div id="debugLog" class="bg-black p-3 rounded max-h-60 overflow-y-auto font-mono text-sm"></div>
+        </div>
+    </div>
+    
+    <script>
+        // 辅助函数：判断是否为主线任务（支持数字ID和字符串ID）
+        function isMainQuest(questId) {
+            if (!questId) return false;
+            // 支持数字ID（1-20）和字符串ID（main_quest_1等）
+            return (typeof questId === 'number' && questId >= 1 && questId <= 20) || 
+                   (typeof questId === 'string' && questId.startsWith('main_quest_'));
+        }
+        
+        let debugLog = [];
+        
+        function log(message, type = 'info') {
+            const timestamp = new Date().toLocaleTimeString();
+            const colors = {
+                info: 'text-white',
+                success: 'text-green-400',
+                warning: 'text-yellow-400',
+                error: 'text-red-400'
+            };
+            
+            debugLog.push({ timestamp, message, type });
+            updateLogDisplay();
+        }
+        
+        function updateLogDisplay() {
+            const logContainer = document.getElementById('debugLog');
+            const colors = {
+                info: 'text-white',
+                success: 'text-green-400',
+                warning: 'text-yellow-400',
+                error: 'text-red-400'
+            };
+            
+            logContainer.innerHTML = debugLog.map(entry => 
+                `<div class="${colors[entry.type]}">[${entry.timestamp}] ${entry.message}</div>`
+            ).join('');
+            
+            logContainer.scrollTop = logContainer.scrollHeight;
+        }
+        
+        function clearLog() {
+            debugLog = [];
+            updateLogDisplay();
+        }
+        
+        function refreshStatus() {
+            log('开始刷新状态...', 'info');
+            
+            try {
+                // 详细检查localStorage中的所有数据
+                const allKeys = Object.keys(localStorage);
+                log(`localStorage中的所有键: ${allKeys.join(', ')}`, 'info');
+                
+                const accountData = localStorage.getItem('legendGameAccounts');
+                let currentAccount = localStorage.getItem('currentAccount');
+                let currentCharacterSlot = localStorage.getItem('currentCharacterSlot');
+                const gameData = localStorage.getItem('legendGameSave');
+                
+                log(`账号数据存在: ${!!accountData}`, 'info');
+                log(`当前账号设置: ${currentAccount || '未设置'}`, 'info');
+                log(`当前角色槽位: ${currentCharacterSlot || '未设置'}`, 'info');
+                log(`旧版本存档存在: ${!!gameData}`, 'info');
+                
+                if (!accountData) {
+                    log('未找到账号数据，尝试检查旧版本存档...', 'warning');
+                    
+                    // 检查是否有旧版本的存档数据
+                    if (gameData) {
+                        try {
+                            const oldGameState = JSON.parse(gameData);
+                            log('发现旧版本存档数据', 'info');
+                            
+                            document.getElementById('currentAccount').textContent = '旧版本存档';
+                            document.getElementById('currentCharacter').textContent = oldGameState.player.name || '未知角色';
+                            document.getElementById('characterLevel').textContent = oldGameState.player.level || 1;
+                            document.getElementById('characterClass').textContent = oldGameState.player.class || '未知';
+                            
+                            if (oldGameState.player.quests) {
+                                const quests = oldGameState.player.quests;
+                                document.getElementById('availableCount').textContent = quests.available ? quests.available.length : 0;
+                                document.getElementById('activeCount').textContent = quests.active ? quests.active.length : 0;
+                                document.getElementById('completedCount').textContent = quests.completed ? quests.completed.length : 0;
+                                
+                                updateQuestDetails(quests);
+                                updateRawDataOld(oldGameState);
+                                
+                                // 检查主线任务状态
+                                if (quests.completed) {
+                                    const completedMainQuests = quests.completed.filter(q => q.id && isMainQuest(q.id));
+                const activeMainQuests = quests.active ? quests.active.filter(q => q.id && isMainQuest(q.id)) : [];
+                const availableMainQuests = quests.available ? quests.available.filter(q => q.id && isMainQuest(q.id)) : [];
+                                    
+                                    log(`主线任务状态 - 已完成: ${completedMainQuests.length}, 进行中: ${activeMainQuests.length}, 可接: ${availableMainQuests.length}`, 'info');
+                                    
+                                    if (completedMainQuests.length > 0) {
+                                        log(`已完成的主线任务: ${completedMainQuests.map(q => q.name || q.id).join(', ')}`, 'info');
+                                    }
+                                    
+                                    if (availableMainQuests.length > 0 && completedMainQuests.length > 0) {
+                                        log('⚠️ 检测到问题：已完成主线任务但仍有可接主线任务', 'error');
+                                    }
+                                }
+                            }
+                            return;
+                        } catch (e) {
+                            log(`解析旧版本存档失败: ${e.message}`, 'error');
+                        }
+                    }
+                    
+                    document.getElementById('currentAccount').textContent = '无账号数据';
+                    log('建议：请先在游戏中创建账号和角色', 'info');
+                    return;
+                }
+                
+                const accounts = JSON.parse(accountData);
+                currentAccount = localStorage.getItem('currentAccount');
+                
+                log(`当前账号: ${currentAccount}`, 'info');
+                log(`可用账号: ${Object.keys(accounts).join(', ')}`, 'info');
+                
+                if (!currentAccount) {
+                    log('未设置当前账号', 'warning');
+                    document.getElementById('currentAccount').textContent = '未设置账号';
+                    // 如果有账号数据，显示可用账号
+                    if (Object.keys(accounts).length > 0) {
+                        log(`可用账号列表: ${Object.keys(accounts).join(', ')}`, 'info');
+                        log('提示：可能需要重新选择账号', 'info');
+                    }
+                    return;
+                }
+                
+                if (!accounts[currentAccount]) {
+                    log(`账号 '${currentAccount}' 不存在于账号数据中`, 'warning');
+                    log(`当前账号数据中的账号: ${Object.keys(accounts).join(', ')}`, 'info');
+                    document.getElementById('currentAccount').textContent = `账号不存在: ${currentAccount}`;
+                    return;
+                }
+                
+                document.getElementById('currentAccount').textContent = currentAccount;
+                
+                currentCharacterSlot = localStorage.getItem('currentCharacterSlot');
+                log(`当前角色槽位: ${currentCharacterSlot}`, 'info');
+                
+                if (currentCharacterSlot !== null) {
+                    const character = accounts[currentAccount].characters[parseInt(currentCharacterSlot)];
+                    if (character) {
+                        document.getElementById('currentCharacter').textContent = character.name;
+                        document.getElementById('characterLevel').textContent = character.gameData.player.level;
+                        document.getElementById('characterClass').textContent = character.gameData.player.class;
+                        
+                        const quests = character.gameData.player.quests;
+                        document.getElementById('availableCount').textContent = quests.available.length;
+                        document.getElementById('activeCount').textContent = quests.active.length;
+                        document.getElementById('completedCount').textContent = quests.completed.length;
+                        
+                        updateQuestDetails(quests);
+                        updateRawData(accounts, character.gameData);
+                        
+                        log(`成功加载角色: ${character.name}`, 'success');
+                        
+                        // 检查主线任务状态
+                        const completedMainQuests = quests.completed.filter(q => q.id && isMainQuest(q.id));
+                const activeMainQuests = quests.active.filter(q => q.id && isMainQuest(q.id));
+                const availableMainQuests = quests.available.filter(q => q.id && isMainQuest(q.id));
+                        
+                        log(`主线任务状态 - 已完成: ${completedMainQuests.length}, 进行中: ${activeMainQuests.length}, 可接: ${availableMainQuests.length}`, 'info');
+                        
+                        if (completedMainQuests.length > 0) {
+                            log(`已完成的主线任务: ${completedMainQuests.map(q => q.name || q.id).join(', ')}`, 'info');
+                        }
+                        
+                        if (availableMainQuests.length > 0 && completedMainQuests.length > 0) {
+                            log('⚠️ 检测到问题：已完成主线任务但仍有可接主线任务', 'error');
+                        }
+                        
+                    } else {
+                        log('当前角色槽位为空', 'warning');
+                        document.getElementById('currentCharacter').textContent = '槽位为空';
+                    }
+                } else {
+                    log('未选择角色', 'warning');
+                    document.getElementById('currentCharacter').textContent = '未选择';
+                }
+                
+            } catch (error) {
+                log(`刷新状态时出错: ${error.message}`, 'error');
+                console.error('调试工具错误:', error);
+            }
+        }
+        
+        function updateQuestDetails(quests) {
+            // 更新可接任务
+            const availableContainer = document.getElementById('availableQuests');
+            availableContainer.innerHTML = quests.available.length === 0 ? 
+                '<div class="text-gray-400">无可接任务</div>' :
+                quests.available.map(q => `
+                    <div class="quest-item ${q.id && isMainQuest(q.id) ? 'main-quest' : 'side-quest'}">
+                        <div class="font-bold">${q.name || '未知任务'}</div>
+                        <div class="text-sm text-gray-300">ID: ${q.id || '无ID'}</div>
+                        <div class="text-sm text-gray-300">类型: ${q.type || '未知'}</div>
+                    </div>
+                `).join('');
+            
+            // 更新进行中任务
+            const activeContainer = document.getElementById('activeQuests');
+            activeContainer.innerHTML = quests.active.length === 0 ? 
+                '<div class="text-gray-400">无进行中任务</div>' :
+                quests.active.map(q => `
+                    <div class="quest-item ${q.id && isMainQuest(q.id) ? 'main-quest' : 'side-quest'}">
+                        <div class="font-bold">${q.name || '未知任务'}</div>
+                        <div class="text-sm text-gray-300">ID: ${q.id || '无ID'}</div>
+                        <div class="text-sm text-gray-300">进度: ${q.currentCount || 0}/${q.targetCount || 0}</div>
+                    </div>
+                `).join('');
+            
+            // 更新已完成任务
+            const completedContainer = document.getElementById('completedQuests');
+            completedContainer.innerHTML = quests.completed.length === 0 ? 
+                '<div class="text-gray-400">无已完成任务</div>' :
+                quests.completed.map(q => `
+                    <div class="quest-item ${q.id && isMainQuest(q.id) ? 'main-quest' : 'side-quest'}">
+                        <div class="font-bold">${q.name || '未知任务'}</div>
+                        <div class="text-sm text-gray-300">ID: ${q.id || '无ID'}</div>
+                        <div class="text-sm text-gray-300">类型: ${q.type || '未知'}</div>
+                    </div>
+                `).join('');
+        }
+        
+        function updateRawData(accounts, gameState) {
+            document.getElementById('localStorageData').textContent = JSON.stringify({
+                accounts: Object.keys(accounts).length,
+                currentAccount: localStorage.getItem('currentAccount'),
+                currentCharacterSlot: localStorage.getItem('currentCharacterSlot'),
+                gameData: localStorage.getItem('legendGameSave') ? '存在' : '不存在'
+            }, null, 2);
+            
+            document.getElementById('gameStateData').textContent = JSON.stringify({
+                player: {
+                    name: gameState.player.name,
+                    level: gameState.player.level,
+                    class: gameState.player.class,
+                    quests: {
+                        available: gameState.player.quests.available.length,
+                        active: gameState.player.quests.active.length,
+                        completed: gameState.player.quests.completed.length
+                    }
+                }
+            }, null, 2);
+        }
+        
+        function updateRawDataOld(gameState) {
+            document.getElementById('localStorageData').textContent = JSON.stringify({
+                type: '旧版本存档',
+                gameData: '存在',
+                accountData: '不存在'
+            }, null, 2);
+            
+            document.getElementById('gameStateData').textContent = JSON.stringify({
+                player: {
+                    name: gameState.player.name,
+                    level: gameState.player.level,
+                    class: gameState.player.class,
+                    quests: {
+                        available: gameState.player.quests.available ? gameState.player.quests.available.length : 0,
+                        active: gameState.player.quests.active ? gameState.player.quests.active.length : 0,
+                        completed: gameState.player.quests.completed ? gameState.player.quests.completed.length : 0
+                    }
+                }
+            }, null, 2);
+        }
+        
+        function clearCache() {
+            if (confirm('确定要清除所有缓存数据吗？这将删除所有存档！')) {
+                localStorage.clear();
+                log('缓存已清除', 'warning');
+                refreshStatus();
+            }
+        }
+        
+        function exportData() {
+            try {
+                const data = {
+                    accounts: localStorage.getItem('legendGameAccounts'),
+                    gameData: localStorage.getItem('legendGameSave'),
+                    currentAccount: localStorage.getItem('currentAccount'),
+                    currentCharacterSlot: localStorage.getItem('currentCharacterSlot'),
+                    timestamp: new Date().toISOString()
+                };
+                
+                const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `legend-game-debug-${Date.now()}.json`;
+                a.click();
+                URL.revokeObjectURL(url);
+                
+                log('数据导出成功', 'success');
+            } catch (error) {
+                log(`导出数据失败: ${error.message}`, 'error');
+            }
+        }
+        
+        function switchToAccountSelection() {
+            try {
+                const accountData = localStorage.getItem('legendGameAccounts');
+                if (!accountData) {
+                    log('没有找到账号数据', 'warning');
+                    alert('没有找到账号数据，请先在游戏中创建账号');
+                    return;
+                }
+                
+                const accounts = JSON.parse(accountData);
+                const accountNames = Object.keys(accounts);
+                
+                if (accountNames.length === 0) {
+                    log('没有可用的账号', 'warning');
+                    alert('没有可用的账号，请先在游戏中创建账号');
+                    return;
+                }
+                
+                // 创建账号选择对话框
+                let message = '请选择要切换的账号：\n\n';
+                accountNames.forEach((name, index) => {
+                    const account = accounts[name];
+                    const characterCount = account.characters.filter(c => c !== null).length;
+                    message += `${index + 1}. ${name} (${characterCount}个角色)\n`;
+                });
+                message += '\n输入账号编号 (1-' + accountNames.length + '):';
+                
+                const choice = prompt(message);
+                if (choice === null) {
+                    log('用户取消了账号切换', 'info');
+                    return;
+                }
+                
+                const choiceIndex = parseInt(choice) - 1;
+                if (isNaN(choiceIndex) || choiceIndex < 0 || choiceIndex >= accountNames.length) {
+                    log('无效的账号选择', 'error');
+                    alert('无效的选择，请输入正确的编号');
+                    return;
+                }
+                
+                const selectedAccount = accountNames[choiceIndex];
+                localStorage.setItem('currentAccount', selectedAccount);
+                localStorage.removeItem('currentCharacterSlot'); // 清除角色选择
+                
+                log(`已切换到账号: ${selectedAccount}`, 'success');
+                
+                // 如果该账号有角色，提示选择角色
+                const account = accounts[selectedAccount];
+                const availableCharacters = account.characters
+                    .map((char, index) => char ? { char, index } : null)
+                    .filter(item => item !== null);
+                
+                if (availableCharacters.length > 0) {
+                    let charMessage = '该账号有以下角色，请选择：\n\n';
+                    availableCharacters.forEach((item, index) => {
+                        charMessage += `${index + 1}. ${item.char.name} (等级${item.char.gameData.player.level} ${item.char.gameData.player.class})\n`;
+                    });
+                    charMessage += '\n输入角色编号 (1-' + availableCharacters.length + '), 或点击取消稍后选择:';
+                    
+                    const charChoice = prompt(charMessage);
+                    if (charChoice !== null) {
+                        const charIndex = parseInt(charChoice) - 1;
+                        if (!isNaN(charIndex) && charIndex >= 0 && charIndex < availableCharacters.length) {
+                            const selectedCharSlot = availableCharacters[charIndex].index;
+                            localStorage.setItem('currentCharacterSlot', selectedCharSlot.toString());
+                            log(`已选择角色: ${availableCharacters[charIndex].char.name}`, 'success');
+                        } else {
+                            log('无效的角色选择', 'warning');
+                        }
+                    }
+                }
+                
+                // 刷新状态显示
+                refreshStatus();
+                
+            } catch (error) {
+                log(`切换账号时出错: ${error.message}`, 'error');
+                console.error('切换账号错误:', error);
+            }
+        }
+        
+        // 页面加载时自动刷新状态
+        window.addEventListener('load', function() {
+            log('调试工具已加载', 'success');
+            refreshStatus();
+        });
+    </script>
+</body>
+</html>

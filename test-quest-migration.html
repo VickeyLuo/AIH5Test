@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>任务迁移测试</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .section { margin: 20px 0; padding: 15px; border: 1px solid #ccc; }
+        .log { background: #f5f5f5; padding: 10px; margin: 10px 0; font-family: monospace; }
+        button { padding: 10px 20px; margin: 5px; }
+        .error { color: red; }
+        .success { color: green; }
+        .warning { color: orange; }
+    </style>
+</head>
+<body>
+    <h1>任务迁移测试页面</h1>
+    
+    <div class="section">
+        <h2>测试步骤</h2>
+        <button onclick="clearStorage()">1. 清除存储</button>
+        <button onclick="createOldFormatData()">2. 创建旧格式数据</button>
+        <button onclick="testMigration()">3. 测试迁移</button>
+        <button onclick="checkResults()">4. 检查结果</button>
+    </div>
+    
+    <div class="section">
+        <h2>测试日志</h2>
+        <div id="log"></div>
+    </div>
+    
+    <div class="section">
+        <h2>存储数据</h2>
+        <div id="storage-data"></div>
+    </div>
+
+    <script>
+        function log(message, type = 'info') {
+            const logDiv = document.getElementById('log');
+            const timestamp = new Date().toLocaleTimeString();
+            const className = type === 'error' ? 'error' : type === 'success' ? 'success' : type === 'warning' ? 'warning' : '';
+            logDiv.innerHTML += `<div class="log ${className}">[${timestamp}] ${message}</div>`;
+            logDiv.scrollTop = logDiv.scrollHeight;
+        }
+        
+        function clearStorage() {
+            localStorage.clear();
+            log('已清除所有本地存储', 'success');
+            updateStorageDisplay();
+        }
+        
+        function createOldFormatData() {
+            const oldData = {
+                player: {
+                    name: "测试玩家",
+                    level: 5,
+                    quests: {
+                        completed: [
+                            { id: "main_quest_1", name: "初入江湖", type: "main" },
+                            { id: "main_quest_2", name: "拜师学艺", type: "main" },
+                            { id: "side_quest_1", name: "帮助村民", type: "side" }
+                        ],
+                        active: [
+                            { id: "main_quest_3", name: "修炼内功", type: "main" }
+                        ],
+                        available: [
+                            { id: "side_quest_2", name: "收集草药", type: "side" }
+                        ]
+                    }
+                }
+            };
+            
+            localStorage.setItem('gameState', JSON.stringify(oldData));
+            log('已创建旧格式测试数据（字符串ID）', 'success');
+            log(`完成任务: ${oldData.player.quests.completed.map(q => q.id).join(', ')}`);
+            updateStorageDisplay();
+        }
+        
+        function testMigration() {
+            // 复制迁移函数
+            function migrateQuestIds(gameState) {
+                const idMapping = {
+                    'main_quest_1': 1, 'main_quest_2': 2, 'main_quest_3': 3, 'main_quest_4': 4, 'main_quest_5': 5,
+                    'main_quest_6': 6, 'main_quest_7': 7, 'main_quest_8': 8, 'main_quest_9': 9, 'main_quest_10': 10,
+                    'main_quest_11': 11, 'main_quest_12': 12, 'main_quest_13': 13, 'main_quest_14': 14, 'main_quest_15': 15,
+                    'main_quest_16': 16, 'main_quest_17': 17, 'main_quest_18': 18, 'main_quest_19': 19, 'main_quest_20': 20
+                };
+                
+                let migrated = false;
+                
+                function migrateQuestArray(questArray, arrayName) {
+                    if (!Array.isArray(questArray)) return;
+                    
+                    for (let i = 0; i < questArray.length; i++) {
+                        const quest = questArray[i];
+                        if (quest && typeof quest.id === 'string' && idMapping[quest.id]) {
+                            log(`迁移 ${arrayName} 中的任务: ${quest.id} -> ${idMapping[quest.id]}`, 'warning');
+                            quest.id = idMapping[quest.id];
+                            migrated = true;
+                        }
+                    }
+                }
+                
+                if (gameState.player && gameState.player.quests) {
+                    migrateQuestArray(gameState.player.quests.completed, 'completed');
+                    migrateQuestArray(gameState.player.quests.active, 'active');
+                    migrateQuestArray(gameState.player.quests.available, 'available');
+                }
+                
+                if (migrated) {
+                    log('任务ID迁移完成，保存游戏状态', 'success');
+                    localStorage.setItem('gameState', JSON.stringify(gameState));
+                } else {
+                    log('未发现需要迁移的任务ID', 'info');
+                }
+                
+                return migrated;
+            }
+            
+            // 执行迁移
+            const gameStateStr = localStorage.getItem('gameState');
+            if (!gameStateStr) {
+                log('未找到游戏存档', 'error');
+                return;
+            }
+            
+            try {
+                const gameState = JSON.parse(gameStateStr);
+                log('开始执行任务ID迁移...', 'info');
+                const result = migrateQuestIds(gameState);
+                log(`迁移结果: ${result ? '已迁移' : '无需迁移'}`, result ? 'success' : 'info');
+                updateStorageDisplay();
+            } catch (error) {
+                log(`迁移失败: ${error.message}`, 'error');
+            }
+        }
+        
+        function checkResults() {
+            const gameStateStr = localStorage.getItem('gameState');
+            if (!gameStateStr) {
+                log('未找到游戏存档', 'error');
+                return;
+            }
+            
+            try {
+                const gameState = JSON.parse(gameStateStr);
+                const quests = gameState.player.quests;
+                
+                log('=== 迁移结果检查 ===', 'info');
+                
+                // 检查已完成任务
+                log(`已完成任务 (${quests.completed.length}个):`);
+                quests.completed.forEach(q => {
+                    const idType = typeof q.id;
+                    const status = idType === 'number' ? '✓' : '✗';
+                    log(`  ${status} ID: ${q.id} (${idType}) - ${q.name}`, idType === 'number' ? 'success' : 'error');
+                });
+                
+                // 检查进行中任务
+                log(`进行中任务 (${quests.active.length}个):`);
+                quests.active.forEach(q => {
+                    const idType = typeof q.id;
+                    const status = idType === 'number' ? '✓' : '✗';
+                    log(`  ${status} ID: ${q.id} (${idType}) - ${q.name}`, idType === 'number' ? 'success' : 'error');
+                });
+                
+                // 检查可接任务
+                log(`可接任务 (${quests.available.length}个):`);
+                quests.available.forEach(q => {
+                    const idType = typeof q.id;
+                    const status = idType === 'number' ? '✓' : '✗';
+                    log(`  ${status} ID: ${q.id} (${idType}) - ${q.name}`, idType === 'number' ? 'success' : 'error');
+                });
+                
+                // 检查主线任务
+                function isMainQuest(questId) {
+                    if (typeof questId === 'number') {
+                        return questId >= 1 && questId <= 20;
+                    }
+                    if (typeof questId === 'string') {
+                        return questId.startsWith('main_quest_');
+                    }
+                    return false;
+                }
+                
+                const completedMainQuests = quests.completed.filter(q => isMainQuest(q.id));
+                log(`已完成主线任务: ${completedMainQuests.length}个`, 'info');
+                completedMainQuests.forEach(q => {
+                    log(`  主线: ${q.id} - ${q.name}`);
+                });
+                
+            } catch (error) {
+                log(`检查失败: ${error.message}`, 'error');
+            }
+        }
+        
+        function updateStorageDisplay() {
+            const storageDiv = document.getElementById('storage-data');
+            const gameStateStr = localStorage.getItem('gameState');
+            
+            if (gameStateStr) {
+                try {
+                    const gameState = JSON.parse(gameStateStr);
+                    storageDiv.innerHTML = `<pre>${JSON.stringify(gameState, null, 2)}</pre>`;
+                } catch (error) {
+                    storageDiv.innerHTML = `<div class="error">JSON解析错误: ${error.message}</div>`;
+                }
+            } else {
+                storageDiv.innerHTML = '<div>无存储数据</div>';
+            }
+        }
+        
+        // 页面加载时显示当前存储
+        updateStorageDisplay();
+    </script>
+</body>
+</html>

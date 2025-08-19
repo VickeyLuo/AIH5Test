@@ -1,0 +1,29 @@
+{
+  "name": "legend-text-game",
+  "version": "1.0.0",
+  "description": "传奇文字游戏 - 经典RPG浏览器游戏",
+  "main": "legend-text.html",
+  "scripts": {
+    "start": "node server/server.js",
+    "dev": "node server/server.js",
+    "build": "echo 'Static build complete'"
+  },
+  "keywords": [
+    "game",
+    "rpg",
+    "legend",
+    "text-game",
+    "browser-game"
+  ],
+  "author": "Game Developer",
+  "license": "MIT",
+  "dependencies": {
+    "express": "^4.18.2",
+    "socket.io": "^4.7.2",
+    "mongoose": "^7.5.0",
+    "dotenv": "^16.3.1"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}

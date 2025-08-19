@@ -1,0 +1,405 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>主线任务显示测试</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+            background: #1a1a1a;
+            color: #fff;
+        }
+        .container {
+            max-width: 1000px;
+            margin: 0 auto;
+        }
+        .section {
+            background: #2a2a2a;
+            padding: 15px;
+            margin: 10px 0;
+            border-radius: 5px;
+        }
+        button {
+            background: #4CAF50;
+            color: white;
+            padding: 8px 12px;
+            border: none;
+            border-radius: 3px;
+            cursor: pointer;
+            margin: 3px;
+            font-size: 12px;
+        }
+        button:hover {
+            background: #45a049;
+        }
+        .quest-display {
+            background: #333;
+            padding: 15px;
+            border-radius: 5px;
+            border: 2px solid #555;
+            margin: 10px 0;
+        }
+        .border-yellow-500 { border-color: #eab308; }
+        .border-green-500 { border-color: #22c55e; }
+        .text-blue-400 { color: #60a5fa; }
+        .text-green-400 { color: #4ade80; }
+        .hidden { display: none; }
+        .log {
+            background: #1a1a1a;
+            padding: 10px;
+            height: 300px;
+            overflow-y: auto;
+            font-family: monospace;
+            font-size: 11px;
+            border: 1px solid #444;
+        }
+        .grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+        }
+        .status {
+            background: #2d2d2d;
+            padding: 10px;
+            border-radius: 3px;
+            margin: 5px 0;
+            font-size: 12px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>主线任务显示测试</h1>
+        
+        <div class="section">
+            <h2>控制面板</h2>
+            <button onclick="resetToFresh()">重置为新游戏</button>
+            <button onclick="simulateFirstQuestCompleted()">模拟完成第1个任务</button>
+            <button onclick="simulateSecondQuestCompleted()">模拟完成第2个任务</button>
+            <button onclick="simulateAllQuestsCompleted()">模拟所有任务完成</button>
+            <button onclick="refreshDisplay()">刷新显示</button>
+            <button onclick="testInitializeQuests()">测试初始化任务</button>
+        </div>
+        
+        <div class="grid">
+            <div>
+                <div class="section">
+                    <h2>主线任务显示面板</h2>
+                    <div id="mainQuestDisplay" class="quest-display border-yellow-500">
+                        <h3 id="mainQuestTitle">加载中...</h3>
+                        <p id="mainQuestDescription">正在加载任务信息...</p>
+                        <div id="mainQuestProgress" class="text-blue-400">进度: 0/1</div>
+                        <div id="mainQuestReward">奖励: 加载中...</div>
+                        <div id="mainQuestSubmitHint" class="hidden">点击提交任务</div>
+                    </div>
+                </div>
+                
+                <div class="section">
+                    <h2>游戏状态</h2>
+                    <div id="gameStatus"></div>
+                </div>
+            </div>
+            
+            <div>
+                <div class="section">
+                    <h2>调试日志</h2>
+                    <div id="debugLog" class="log"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // 模拟游戏状态
+        let gameState = {
+            player: {
+                level: 1,
+                quests: {
+                    available: [],
+                    active: [],
+                    completed: []
+                }
+            }
+        };
+
+        // 主线任务配置
+        let mainQuestChainConfig = [
+            {
+                id: 1,
+                name: '初入江湖',
+                description: '装备一件武器开始你的冒险',
+                type: 'equip',
+                target: 'weapon',
+                targetCount: 1,
+                currentCount: 0,
+                rewards: { exp: 50, gold: 20 },
+                order: 1
+            },
+            {
+                id: 2,
+                name: '初试身手',
+                description: '击败5只怪物',
+                type: 'kill',
+                target: 'any',
+                targetCount: 5,
+                currentCount: 0,
+                rewards: { exp: 100, gold: 50 },
+                order: 2
+            },
+            {
+                id: 3,
+                name: '财富积累',
+                description: '收集200金币',
+                type: 'collect',
+                target: 'gold',
+                targetCount: 200,
+                currentCount: 0,
+                rewards: { exp: 80, gold: 30 },
+                order: 3
+            }
+        ];
+
+        function log(message) {
+            const logDiv = document.getElementById('debugLog');
+            const time = new Date().toLocaleTimeString();
+            logDiv.innerHTML += `[${time}] ${message}<br>`;
+            logDiv.scrollTop = logDiv.scrollHeight;
+            console.log(message);
+        }
+
+        function isMainQuest(questId) {
+            return (typeof questId === 'number' && questId >= 1 && questId <= 20) || 
+                   (typeof questId === 'string' && questId.startsWith('main_quest_'));
+        }
+
+        function updateGameStatus() {
+            const statusDiv = document.getElementById('gameStatus');
+            const availableMain = gameState.player.quests.available.filter(q => isMainQuest(q.id));
+            const activeMain = gameState.player.quests.active.filter(q => isMainQuest(q.id));
+            const completedMain = gameState.player.quests.completed.filter(q => isMainQuest(q.id));
+            
+            statusDiv.innerHTML = `
+                <div class="status">可接取任务总数: ${gameState.player.quests.available.length}</div>
+                <div class="status">可接取主线任务: ${availableMain.length}</div>
+                <div class="status">进行中任务总数: ${gameState.player.quests.active.length}</div>
+                <div class="status">进行中主线任务: ${activeMain.length}</div>
+                <div class="status">已完成任务总数: ${gameState.player.quests.completed.length}</div>
+                <div class="status">已完成主线任务: ${completedMain.length}</div>
+                <div class="status">配置中任务总数: ${mainQuestChainConfig.length}</div>
+            `;
+            
+            if (availableMain.length > 0) {
+                statusDiv.innerHTML += `<div class="status">可接取主线: ${availableMain.map(q => `${q.name}(ID:${q.id})`).join(', ')}</div>`;
+            }
+            if (activeMain.length > 0) {
+                statusDiv.innerHTML += `<div class="status">进行中主线: ${activeMain.map(q => `${q.name}(ID:${q.id})`).join(', ')}</div>`;
+            }
+            if (completedMain.length > 0) {
+                statusDiv.innerHTML += `<div class="status">已完成主线: ${completedMain.map(q => `${q.name}(ID:${q.id})`).join(', ')}</div>`;
+            }
+        }
+
+        function updateMainQuestDisplay() {
+            log('=== 开始更新主线任务显示 ===');
+            
+            const activeMainQuests = gameState.player.quests.active.filter(q => isMainQuest(q.id));
+            const availableMainQuests = gameState.player.quests.available.filter(q => isMainQuest(q.id));
+            const completedMainQuests = gameState.player.quests.completed.filter(q => isMainQuest(q.id));
+            
+            log(`当前状态: 进行中主线${activeMainQuests.length}个, 可接取主线${availableMainQuests.length}个, 已完成主线${completedMainQuests.length}个`);
+            
+            const titleElement = document.getElementById('mainQuestTitle');
+            const descriptionElement = document.getElementById('mainQuestDescription');
+            const progressElement = document.getElementById('mainQuestProgress');
+            const rewardElement = document.getElementById('mainQuestReward');
+            const submitHintElement = document.getElementById('mainQuestSubmitHint');
+            const displayElement = document.getElementById('mainQuestDisplay');
+            
+            // 查找当前进行中的主线任务
+            const activeMainQuest = activeMainQuests[0];
+            
+            if (activeMainQuest) {
+                log(`显示进行中的主线任务: ${activeMainQuest.name} (ID: ${activeMainQuest.id})`);
+                titleElement.textContent = activeMainQuest.name;
+                descriptionElement.textContent = activeMainQuest.description;
+                progressElement.textContent = `进度: ${Math.min(activeMainQuest.currentCount, activeMainQuest.targetCount)}/${activeMainQuest.targetCount}`;
+                
+                let rewardText = '';
+                if (activeMainQuest.rewards.exp) rewardText += `经验+${activeMainQuest.rewards.exp}`;
+                if (activeMainQuest.rewards.gold) rewardText += ` 金币+${activeMainQuest.rewards.gold}`;
+                if (activeMainQuest.rewards.item) rewardText += ` ${activeMainQuest.rewards.item}`;
+                rewardElement.textContent = `奖励: ${rewardText}`;
+                
+                const isCompleted = activeMainQuest.currentCount >= activeMainQuest.targetCount;
+                if (isCompleted) {
+                    displayElement.className = 'quest-display border-green-500';
+                    progressElement.className = 'text-green-400';
+                    submitHintElement.className = '';
+                    submitHintElement.textContent = '点击提交任务';
+                } else {
+                    displayElement.className = 'quest-display border-yellow-500';
+                    progressElement.className = 'text-blue-400';
+                    submitHintElement.className = 'hidden';
+                }
+            } else {
+                // 查找下一个可接取的主线任务
+                const availableMainQuest = availableMainQuests[0];
+                
+                log(`没有进行中的主线任务，查找可接取任务: ${availableMainQuest ? availableMainQuest.name + ' (ID: ' + availableMainQuest.id + ')' : '无'}`);
+                
+                if (availableMainQuest) {
+                    log(`显示可接取的主线任务: ${availableMainQuest.name}`);
+                    titleElement.textContent = availableMainQuest.name;
+                    descriptionElement.textContent = availableMainQuest.description;
+                    progressElement.textContent = '点击接取任务';
+                    
+                    let rewardText = '';
+                    if (availableMainQuest.rewards.exp) rewardText += `经验+${availableMainQuest.rewards.exp}`;
+                    if (availableMainQuest.rewards.gold) rewardText += ` 金币+${availableMainQuest.rewards.gold}`;
+                    if (availableMainQuest.rewards.item) rewardText += ` ${availableMainQuest.rewards.item}`;
+                    rewardElement.textContent = `奖励: ${rewardText}`;
+                    
+                    displayElement.className = 'quest-display border-yellow-500';
+                    progressElement.className = 'text-blue-400';
+                    submitHintElement.className = '';
+                    submitHintElement.textContent = '点击接取任务';
+                } else {
+                    // 这里是问题所在！
+                    log('⚠️ 没有可接取的主线任务 - 这可能是错误的判断！');
+                    log(`调试信息: 已完成${completedMainQuests.length}个主线任务，配置中共有${mainQuestChainConfig.length}个任务`);
+                    
+                    if (completedMainQuests.length >= mainQuestChainConfig.length) {
+                        log('✅ 确实所有主线任务都完成了');
+                        titleElement.textContent = '主线任务';
+                        descriptionElement.textContent = '恭喜！所有主线任务已完成！';
+                        progressElement.textContent = '任务完成';
+                        rewardElement.textContent = '感谢您的游玩！';
+                    } else {
+                        log('❌ 错误：应该还有主线任务可接取，但没有找到！');
+                        titleElement.textContent = '主线任务异常';
+                        descriptionElement.textContent = '任务系统出现异常，请刷新任务系统';
+                        progressElement.textContent = '系统异常';
+                        rewardElement.textContent = '请联系管理员';
+                    }
+                    
+                    displayElement.className = 'quest-display border-green-500';
+                    progressElement.className = 'text-green-400';
+                    submitHintElement.className = 'hidden';
+                }
+            }
+            
+            log('=== 主线任务显示更新完成 ===');
+        }
+
+        function initializeQuests() {
+            log('=== 开始初始化任务系统 ===');
+            
+            // 清空现有可接任务
+            gameState.player.quests.available = [];
+            
+            // 找到下一个可接取的主线任务
+            const completedMainQuests = gameState.player.quests.completed.filter(q => isMainQuest(q.id));
+            const activeMainQuests = gameState.player.quests.active.filter(q => isMainQuest(q.id));
+            
+            log(`已完成主线任务: ${completedMainQuests.length}个`);
+            log(`进行中主线任务: ${activeMainQuests.length}个`);
+            
+            const completedCount = completedMainQuests.length;
+            const nextQuestIndex = completedCount;
+            
+            log(`计算下一个任务索引: ${nextQuestIndex}`);
+            log(`配置中任务总数: ${mainQuestChainConfig.length}`);
+            
+            // 如果还有主线任务未完成，且当前没有进行中的主线任务
+            if (nextQuestIndex < mainQuestChainConfig.length && activeMainQuests.length === 0) {
+                const nextQuest = {...mainQuestChainConfig[nextQuestIndex]};
+                nextQuest.currentCount = 0;
+                
+                // 检查这个任务是否已经存在
+                const alreadyCompleted = gameState.player.quests.completed.some(q => q.id === nextQuest.id);
+                const alreadyActive = gameState.player.quests.active.some(q => q.id === nextQuest.id);
+                
+                log(`检查任务 ${nextQuest.name} (ID: ${nextQuest.id}): 已完成=${alreadyCompleted}, 进行中=${alreadyActive}`);
+                
+                if (!alreadyCompleted && !alreadyActive) {
+                    gameState.player.quests.available.push(nextQuest);
+                    log(`✅ 成功添加新的主线任务: ${nextQuest.name} (ID: ${nextQuest.id})`);
+                } else {
+                    log(`❌ 跳过任务 ${nextQuest.name}，原因: ${alreadyCompleted ? '已完成' : ''}${alreadyActive ? '进行中' : ''}`);
+                }
+            } else {
+                if (nextQuestIndex >= mainQuestChainConfig.length) {
+                    log('🎉 所有主线任务已完成！');
+                } else {
+                    log('⏳ 有进行中的主线任务，不添加新任务');
+                }
+            }
+            
+            log('=== 任务系统初始化完成 ===');
+            updateGameStatus();
+            updateMainQuestDisplay();
+        }
+
+        function resetToFresh() {
+            gameState.player.quests = {
+                available: [],
+                active: [],
+                completed: []
+            };
+            log('🔄 重置为新游戏状态');
+            initializeQuests();
+        }
+
+        function simulateFirstQuestCompleted() {
+            gameState.player.quests.completed = [
+                {...mainQuestChainConfig[0], currentCount: 1}
+            ];
+            gameState.player.quests.active = [];
+            gameState.player.quests.available = [];
+            log('🎯 模拟第1个任务已完成');
+            initializeQuests();
+        }
+
+        function simulateSecondQuestCompleted() {
+            gameState.player.quests.completed = [
+                {...mainQuestChainConfig[0], currentCount: 1},
+                {...mainQuestChainConfig[1], currentCount: 5}
+            ];
+            gameState.player.quests.active = [];
+            gameState.player.quests.available = [];
+            log('🎯 模拟前2个任务已完成');
+            initializeQuests();
+        }
+
+        function simulateAllQuestsCompleted() {
+            gameState.player.quests.completed = mainQuestChainConfig.map(quest => ({
+                ...quest,
+                currentCount: quest.targetCount
+            }));
+            gameState.player.quests.active = [];
+            gameState.player.quests.available = [];
+            log('🎯 模拟所有任务已完成');
+            initializeQuests();
+        }
+
+        function refreshDisplay() {
+            log('🔄 手动刷新显示');
+            updateGameStatus();
+            updateMainQuestDisplay();
+        }
+
+        function testInitializeQuests() {
+            log('🧪 测试初始化任务函数');
+            initializeQuests();
+        }
+
+        // 页面加载时初始化
+        window.onload = function() {
+            log('页面加载完成，开始测试');
+            resetToFresh();
+        };
+    </script>
+</body>
+</html>

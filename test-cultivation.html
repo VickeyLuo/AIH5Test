@@ -29,13 +29,35 @@
             player: {
                 gold: 1000,
                 materials: [],
-                cultivation: {
-                    dropRate: { level: 0, exp: 0 },
-                    damage: { level: 0, exp: 0 },
-                    whipCorpse: { level: 0, exp: 0 }
-                }
+                cultivation: {}
             }
         };
+        
+        // 从配置文件获取修炼系统数据
+        function initializeCultivationData() {
+            if (window.configManager && window.configManager.isInitialized()) {
+                try {
+                    const cultivationConfig = window.configManager.getCultivationConfig();
+                    if (cultivationConfig) {
+                        gameState.player.cultivation = cultivationConfig.initialLevels || getDefaultCultivationLevels();
+                        return;
+                    }
+                } catch (error) {
+                    console.warn('无法从配置获取修炼数据，使用默认数据');
+                }
+            }
+            
+            // 使用默认修炼数据
+            gameState.player.cultivation = getDefaultCultivationLevels();
+        }
+        
+        function getDefaultCultivationLevels() {
+            return {
+                dropRate: { level: 0, exp: 0 },
+                damage: { level: 0, exp: 0 },
+                whipCorpse: { level: 0, exp: 0 }
+            };
+        }
         
         function log(message) {
             const results = document.getElementById('results');
@@ -88,11 +110,30 @@
                 const type = 'dropRate';
                 const cultivation = gameState.player.cultivation[type];
                 
-                // 模拟升级材料需求
-                const requiredMaterials = [
-                    { name: '铁矿石', quantity: 2 + cultivation.level },
-                    { name: '魔法水晶', quantity: 1 + Math.floor(cultivation.level / 2) }
-                ];
+                // 从配置获取升级材料需求
+                let requiredMaterials = [];
+                if (window.configManager && window.configManager.isInitialized()) {
+                    try {
+                        const cultivationConfig = window.configManager.getCultivationConfig();
+                        if (cultivationConfig && cultivationConfig.upgradeMaterials && cultivationConfig.upgradeMaterials[type]) {
+                            const materialConfig = cultivationConfig.upgradeMaterials[type];
+                            requiredMaterials = materialConfig.map(material => ({
+                                name: material.name,
+                                quantity: material.baseQuantity + (material.levelMultiplier || 1) * cultivation.level
+                            }));
+                        }
+                    } catch (error) {
+                        console.warn('无法从配置获取升级材料，使用默认材料');
+                    }
+                }
+                
+                // 如果配置中没有材料，使用默认材料
+                if (requiredMaterials.length === 0) {
+                    requiredMaterials = [
+                        { name: '铁矿石', quantity: 2 + cultivation.level },
+                        { name: '魔法水晶', quantity: 1 + Math.floor(cultivation.level / 2) }
+                    ];
+                }
                 
                 // 检查材料是否足够
                 let canUpgrade = true;
@@ -149,13 +190,38 @@
             });
         }
         
-        // 初始化一些测试材料
-        gameState.player.materials.push(
-            { name: '铁矿石', count: 5, description: '基础锻造材料' },
-            { name: '魔法水晶', count: 3, description: '蕴含魔力的水晶' }
-        );
+        // 初始化测试数据
+        function initializeTestData() {
+            // 初始化修炼系统数据
+            initializeCultivationData();
+            
+            // 从配置获取测试材料
+            let testMaterials = [];
+            if (window.configManager && window.configManager.isInitialized()) {
+                try {
+                    testMaterials = window.configManager.getTestMaterials() || [];
+                } catch (error) {
+                    console.warn('无法从配置获取测试材料，使用默认材料');
+                }
+            }
+            
+            // 如果配置中没有测试材料，使用默认材料
+            if (testMaterials.length === 0) {
+                testMaterials = [
+                    { name: '铁矿石', count: 5, description: '基础锻造材料' },
+                    { name: '魔法水晶', count: 3, description: '蕴含魔力的水晶' }
+                ];
+            }
+            
+            // 添加测试材料到游戏状态
+            gameState.player.materials.push(...testMaterials);
+        }
         
-        log('测试页面已加载，可以开始测试养成系统功能');
+        // 页面加载时初始化
+        window.onload = function() {
+            initializeTestData();
+            log('测试页面已加载，可以开始测试养成系统功能');
+        }
     </script>
 </body>
 </html>

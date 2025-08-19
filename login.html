@@ -1,0 +1,462 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>传奇游戏 - 登录</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Microsoft YaHei', Arial, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .login-container {
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 15px;
+            padding: 40px;
+            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.1);
+            width: 100%;
+            max-width: 400px;
+            backdrop-filter: blur(10px);
+        }
+        
+        .game-title {
+            text-align: center;
+            color: #333;
+            font-size: 28px;
+            font-weight: bold;
+            margin-bottom: 30px;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.1);
+        }
+        
+        .form-tabs {
+            display: flex;
+            margin-bottom: 30px;
+            border-radius: 8px;
+            overflow: hidden;
+            background: #f0f0f0;
+        }
+        
+        .tab-button {
+            flex: 1;
+            padding: 12px;
+            background: #f0f0f0;
+            border: none;
+            cursor: pointer;
+            font-size: 16px;
+            transition: all 0.3s ease;
+        }
+        
+        .tab-button.active {
+            background: #667eea;
+            color: white;
+        }
+        
+        .form-group {
+            margin-bottom: 20px;
+        }
+        
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            color: #333;
+            font-weight: 500;
+        }
+        
+        .form-group input {
+            width: 100%;
+            padding: 12px 15px;
+            border: 2px solid #ddd;
+            border-radius: 8px;
+            font-size: 16px;
+            transition: border-color 0.3s ease;
+        }
+        
+        .form-group input:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+        
+        .submit-button {
+            width: 100%;
+            padding: 15px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 18px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: transform 0.2s ease;
+        }
+        
+        .submit-button:hover {
+            transform: translateY(-2px);
+        }
+        
+        .submit-button:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+        
+        .error-message {
+            background: #ff6b6b;
+            color: white;
+            padding: 12px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            text-align: center;
+            display: none;
+        }
+        
+        .success-message {
+            background: #51cf66;
+            color: white;
+            padding: 12px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            text-align: center;
+            display: none;
+        }
+        
+        .connection-status {
+            text-align: center;
+            margin-bottom: 20px;
+            padding: 8px;
+            border-radius: 6px;
+            font-size: 14px;
+        }
+        
+        .connection-status.connected {
+            background: #d4edda;
+            color: #155724;
+        }
+        
+        .connection-status.disconnected {
+            background: #f8d7da;
+            color: #721c24;
+        }
+        
+        .loading {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid #667eea;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin-right: 10px;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        .register-form {
+            display: none;
+        }
+        
+        .guest-login {
+            text-align: center;
+            margin-top: 20px;
+        }
+        
+        .guest-button {
+            background: none;
+            border: 2px solid #667eea;
+            color: #667eea;
+            padding: 10px 20px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: all 0.3s ease;
+        }
+        
+        .guest-button:hover {
+            background: #667eea;
+            color: white;
+        }
+    </style>
+</head>
+<body>
+    <div class="login-container">
+        <h1 class="game-title">🗡️ 传奇游戏</h1>
+        
+        <div class="connection-status" id="connectionStatus">
+            <span class="loading"></span>连接服务器中...
+        </div>
+        
+        <div class="form-tabs">
+            <button class="tab-button active" onclick="switchTab('login')">登录</button>
+            <button class="tab-button" onclick="switchTab('register')">注册</button>
+        </div>
+        
+        <div class="error-message" id="errorMessage"></div>
+        <div class="success-message" id="successMessage"></div>
+        
+        <!-- 登录表单 -->
+        <form class="login-form" id="loginForm">
+            <div class="form-group">
+                <label for="loginUsername">用户名</label>
+                <input type="text" id="loginUsername" required minlength="3" maxlength="20">
+            </div>
+            <div class="form-group">
+                <label for="loginPassword">密码</label>
+                <input type="password" id="loginPassword" required minlength="6">
+            </div>
+            <button type="submit" class="submit-button" id="loginButton">登录</button>
+        </form>
+        
+        <!-- 注册表单 -->
+        <form class="register-form" id="registerForm">
+            <div class="form-group">
+                <label for="registerUsername">用户名</label>
+                <input type="text" id="registerUsername" required minlength="3" maxlength="20">
+            </div>
+            <div class="form-group">
+                <label for="registerPassword">密码</label>
+                <input type="password" id="registerPassword" required minlength="6">
+            </div>
+            <div class="form-group">
+                <label for="confirmPassword">确认密码</label>
+                <input type="password" id="confirmPassword" required minlength="6">
+            </div>
+            <button type="submit" class="submit-button" id="registerButton">注册</button>
+        </form>
+        
+        <div class="guest-login">
+            <button class="guest-button" onclick="playAsGuest()">游客模式</button>
+        </div>
+    </div>
+    
+    <!-- Socket.io客户端 -->
+    <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
+    <script>
+        // 动态加载network-manager.js避免缓存
+        const script = document.createElement('script');
+        script.src = './network-manager.js?v=' + Date.now();
+        script.onload = function() {
+            console.log('Network manager loaded successfully');
+        };
+        script.onerror = function() {
+            console.error('Failed to load network manager');
+        };
+        document.head.appendChild(script);
+    </script>
+    
+    <script>
+        let currentTab = 'login';
+        
+        // 切换标签页
+        function switchTab(tab) {
+            currentTab = tab;
+            
+            // 更新标签按钮状态
+            document.querySelectorAll('.tab-button').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            event.target.classList.add('active');
+            
+            // 显示/隐藏表单
+            if (tab === 'login') {
+                document.getElementById('loginForm').style.display = 'block';
+                document.getElementById('registerForm').style.display = 'none';
+            } else {
+                document.getElementById('loginForm').style.display = 'none';
+                document.getElementById('registerForm').style.display = 'block';
+            }
+            
+            clearMessages();
+        }
+        
+        // 显示错误消息
+        function showError(message) {
+            const errorDiv = document.getElementById('errorMessage');
+            errorDiv.textContent = message;
+            errorDiv.style.display = 'block';
+            document.getElementById('successMessage').style.display = 'none';
+        }
+        
+        // 显示成功消息
+        function showSuccess(message) {
+            const successDiv = document.getElementById('successMessage');
+            successDiv.textContent = message;
+            successDiv.style.display = 'block';
+            document.getElementById('errorMessage').style.display = 'none';
+        }
+        
+        // 清除消息
+        function clearMessages() {
+            document.getElementById('errorMessage').style.display = 'none';
+            document.getElementById('successMessage').style.display = 'none';
+        }
+        
+        // 更新连接状态
+        function updateConnectionStatus(connected) {
+            const statusDiv = document.getElementById('connectionStatus');
+            if (connected) {
+                statusDiv.className = 'connection-status connected';
+                statusDiv.innerHTML = '✅ 已连接到服务器';
+            } else {
+                statusDiv.className = 'connection-status disconnected';
+                statusDiv.innerHTML = '❌ 服务器连接断开';
+            }
+        }
+        
+        // 设置按钮加载状态
+        function setButtonLoading(buttonId, loading) {
+            const button = document.getElementById(buttonId);
+            if (loading) {
+                button.disabled = true;
+                button.innerHTML = '<span class="loading"></span>处理中...';
+            } else {
+                button.disabled = false;
+                button.innerHTML = buttonId === 'loginButton' ? '登录' : '注册';
+            }
+        }
+        
+        // 登录表单提交
+        document.getElementById('loginForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const username = document.getElementById('loginUsername').value;
+            const password = document.getElementById('loginPassword').value;
+            
+            if (!username || !password) {
+                showError('请填写用户名和密码');
+                return;
+            }
+            
+            setButtonLoading('loginButton', true);
+            clearMessages();
+            
+            try {
+                const result = await networkManager.login(username, password);
+                
+                if (result.success) {
+                    showSuccess('登录成功，正在进入游戏...');
+                    setTimeout(() => {
+                        window.location.href = 'legend-text.html?external_login=true';
+                    }, 1500);
+                } else {
+                    showError(result.error || '登录失败');
+                }
+            } catch (error) {
+                showError('网络连接失败，请检查服务器状态');
+            }
+            
+            setButtonLoading('loginButton', false);
+        });
+        
+        // 注册表单提交
+        document.getElementById('registerForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const username = document.getElementById('registerUsername').value;
+            const password = document.getElementById('registerPassword').value;
+            const confirmPassword = document.getElementById('confirmPassword').value;
+            
+            if (!username || !password || !confirmPassword) {
+                showError('请填写所有字段');
+                return;
+            }
+            
+            if (password !== confirmPassword) {
+                showError('两次输入的密码不一致');
+                return;
+            }
+            
+            if (username.length < 3 || username.length > 20) {
+                showError('用户名长度必须在3-20个字符之间');
+                return;
+            }
+            
+            if (password.length < 6) {
+                showError('密码长度至少6个字符');
+                return;
+            }
+            
+            setButtonLoading('registerButton', true);
+            clearMessages();
+            
+            try {
+                const result = await networkManager.register(username, password);
+                
+                if (result.success) {
+                    showSuccess('注册成功，正在进入游戏...');
+                    setTimeout(() => {
+                        window.location.href = 'legend-text.html?external_login=true';
+                    }, 1500);
+                } else {
+                    showError(result.error || '注册失败');
+                }
+            } catch (error) {
+                showError('网络连接失败，请检查服务器状态');
+            }
+            
+            setButtonLoading('registerButton', false);
+        });
+        
+        // 游客模式
+        function playAsGuest() {
+            // 清除token，使用本地模式
+            localStorage.removeItem('gameToken');
+            window.location.href = 'legend-text.html?mode=guest';
+        }
+        
+        // 等待网络管理器加载完成后初始化
+        function initializeNetworkManager() {
+            if (typeof networkManager === 'undefined') {
+                setTimeout(initializeNetworkManager, 100);
+                return;
+            }
+            
+            // 网络管理器事件监听
+            networkManager.on('connected', () => {
+                updateConnectionStatus(true);
+            });
+            
+            networkManager.on('disconnected', () => {
+                updateConnectionStatus(false);
+            });
+            
+            networkManager.on('authenticated', (data) => {
+                showSuccess('认证成功，正在进入游戏...');
+                setTimeout(() => {
+                    window.location.href = 'legend-text.html?external_login=true';
+                }, 1500);
+            });
+            
+            networkManager.on('auth_error', (data) => {
+                showError('认证失败: ' + data.message);
+            });
+            
+            networkManager.on('force_disconnect', (data) => {
+                showError('您的账号在其他地方登录');
+            });
+            
+            // 检查是否已有token
+            const token = localStorage.getItem('gameToken');
+            if (token && networkManager.isConnected) {
+                // 如果有token且已连接，尝试自动认证
+                networkManager.authenticate(token);
+            }
+        }
+        
+        // 页面加载时初始化
+         window.addEventListener('load', initializeNetworkManager);
+    </script>
+</body>
+</html>

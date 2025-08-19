@@ -1,0 +1,293 @@
+{
+  "type": "craft",
+  "version": "1.0.0",
+  "timestamp": "2024-01-01T00:00:00.000Z",
+  "data": {
+    "recipes": [
+      {
+        "id": 3001,
+        "name": "铁剑合成",
+        "resultItem": {
+          "id": 2,
+          "quantity": 1
+        },
+        "materials": [
+          {
+            "id": 2101,
+            "name": "铁矿石",
+            "quantity": 3
+          }
+        ],
+        "goldCost": 50,
+        "requirements": {
+          "level": 2,
+          "skill": "blacksmith",
+          "skillLevel": 1
+        },
+        "category": "weapon",
+        "description": "用铁矿石锻造铁剑"
+      },
+      {
+        "id": 3002,
+        "name": "银剑合成",
+        "resultItem": {
+          "id": 3,
+          "quantity": 1
+        },
+        "materials": [
+          {
+            "id": 2102,
+            "name": "银矿石",
+            "quantity": 2
+          },
+          {
+            "id": 2101,
+            "name": "铁矿石",
+            "quantity": 1
+          }
+        ],
+        "goldCost": 150,
+        "requirements": {
+          "level": 5,
+          "skill": "blacksmith",
+          "skillLevel": 3
+        },
+        "category": "weapon",
+        "description": "用银矿石和铁矿石锻造银剑"
+      },
+      {
+        "id": 3003,
+        "name": "龙鳞剑合成",
+        "resultItem": {
+          "id": 5,
+          "quantity": 1
+        },
+        "materials": [
+          {
+            "id": 2104,
+            "name": "龙鳞",
+            "quantity": 5
+          },
+          {
+            "id": 2103,
+            "name": "金矿石",
+            "quantity": 3
+          },
+          {
+            "id": 2105,
+            "name": "魔法水晶",
+            "quantity": 2
+          }
+        ],
+        "goldCost": 800,
+        "requirements": {
+          "level": 12,
+          "skill": "blacksmith",
+          "skillLevel": 8
+        },
+        "category": "weapon",
+        "description": "用龙鳞锻造传说武器"
+      },
+      {
+        "id": 3004,
+        "name": "皮甲合成",
+        "resultItem": {
+          "id": 102,
+          "quantity": 1
+        },
+        "materials": [
+          {
+            "id": 2109,
+            "name": "兽皮",
+            "quantity": 4
+          }
+        ],
+        "goldCost": 30,
+        "requirements": {
+          "level": 1,
+          "skill": "leatherwork",
+          "skillLevel": 1
+        },
+        "category": "armor",
+        "description": "用兽皮制作皮甲"
+      },
+      {
+        "id": 3005,
+        "name": "铁甲合成",
+        "resultItem": {
+          "id": 103,
+          "quantity": 1
+        },
+        "materials": [
+          {
+            "id": 2101,
+            "name": "铁矿石",
+            "quantity": 5
+          }
+        ],
+        "goldCost": 100,
+        "requirements": {
+          "level": 3,
+          "skill": "blacksmith",
+          "skillLevel": 2
+        },
+        "category": "armor",
+        "description": "用铁矿石锻造铁甲"
+      },
+      {
+        "id": 3006,
+        "name": "小型生命药水合成",
+        "resultItem": {
+          "id": 2001,
+          "quantity": 3
+        },
+        "materials": [
+          {
+            "id": 2106,
+            "name": "生命之花",
+            "quantity": 1
+          }
+        ],
+        "goldCost": 10,
+        "requirements": {
+          "level": 1,
+          "skill": "alchemy",
+          "skillLevel": 1
+        },
+        "category": "potion",
+        "description": "用生命之花制作生命药水"
+      },
+      {
+        "id": 3007,
+        "name": "中型生命药水合成",
+        "resultItem": {
+          "id": 2002,
+          "quantity": 2
+        },
+        "materials": [
+          {
+            "id": 2106,
+            "name": "生命之花",
+            "quantity": 2
+          },
+          {
+            "id": 2105,
+            "name": "魔法水晶",
+            "quantity": 1
+          }
+        ],
+        "goldCost": 25,
+        "requirements": {
+          "level": 3,
+          "skill": "alchemy",
+          "skillLevel": 2
+        },
+        "category": "potion",
+        "description": "用生命之花和魔法水晶制作中型生命药水"
+      },
+      {
+        "id": 3008,
+        "name": "小型魔法药水合成",
+        "resultItem": {
+          "id": 2004,
+          "quantity": 3
+        },
+        "materials": [
+          {
+            "id": 2107,
+            "name": "魔力草",
+            "quantity": 2
+          }
+        ],
+        "goldCost": 15,
+        "requirements": {
+          "level": 1,
+          "skill": "alchemy",
+          "skillLevel": 1
+        },
+        "category": "potion",
+        "description": "用魔力草制作魔法药水"
+      },
+      {
+        "id": 3009,
+        "name": "力量戒指合成",
+        "resultItem": {
+          "id": 401,
+          "quantity": 1
+        },
+        "materials": [
+          {
+            "id": 2102,
+            "name": "银矿石",
+            "quantity": 1
+          },
+          {
+            "id": 2105,
+            "name": "魔法水晶",
+            "quantity": 1
+          }
+        ],
+        "goldCost": 80,
+        "requirements": {
+          "level": 4,
+          "skill": "enchanting",
+          "skillLevel": 2
+        },
+        "category": "accessory",
+        "description": "用银矿石和魔法水晶制作力量戒指"
+      },
+      {
+        "id": 3010,
+        "name": "装备强化",
+        "resultItem": {
+          "type": "enhancement",
+          "description": "提升装备属性"
+        },
+        "materials": [
+          {
+            "id": 2108,
+            "name": "强化石",
+            "quantity": 1
+          }
+        ],
+        "goldCost": 200,
+        "requirements": {
+          "level": 5,
+          "skill": "enchanting",
+          "skillLevel": 3
+        },
+        "category": "enhancement",
+        "description": "使用强化石提升装备属性"
+      }
+    ],
+    "skills": {
+      "blacksmith": {
+        "name": "锻造",
+        "description": "制作武器和防具的技能",
+        "maxLevel": 10
+      },
+      "leatherwork": {
+        "name": "皮革加工",
+        "description": "制作皮革装备的技能",
+        "maxLevel": 8
+      },
+      "alchemy": {
+        "name": "炼金术",
+        "description": "制作药水的技能",
+        "maxLevel": 10
+      },
+      "enchanting": {
+        "name": "附魔",
+        "description": "制作饰品和强化装备的技能",
+        "maxLevel": 10
+      }
+    },
+    "categories": {
+      "weapon": "武器",
+      "armor": "防具",
+      "accessory": "饰品",
+      "potion": "药水",
+      "enhancement": "强化"
+    }
+  }
+}

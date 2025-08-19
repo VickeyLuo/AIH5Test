@@ -154,16 +154,28 @@
                 if (gameWindow.gameState && gameWindow.gameState.player) {
                     const player = gameWindow.gameState.player;
                     
-                    // 添加合成所需的测试材料
-                    const testMaterials = [
-                        { name: '铁矿石', count: 10 },
-                        { name: '银矿石', count: 8 },
-                        { name: '黄金矿石', count: 5 },
-                        { name: '魔法水晶', count: 6 },
-                        { name: '暗影精华', count: 4 },
-                        { name: '神圣宝石', count: 3 },
-                        { name: '龙鳞片', count: 2 }
-                    ];
+                    // 从配置文件获取测试材料
+                    let testMaterials = [];
+                    if (gameWindow.configManager && gameWindow.configManager.isInitialized()) {
+                        try {
+                            testMaterials = gameWindow.configManager.getTestMaterials() || [];
+                        } catch (error) {
+                            log('⚠️ 无法从配置获取测试材料，使用默认材料', 'warning');
+                        }
+                    }
+                    
+                    // 如果配置文件中没有测试材料，使用默认材料
+                    if (testMaterials.length === 0) {
+                        testMaterials = [
+                            { name: '铁矿石', count: 10 },
+                            { name: '银矿石', count: 8 },
+                            { name: '黄金矿石', count: 5 },
+                            { name: '魔法水晶', count: 6 },
+                            { name: '暗影精华', count: 4 },
+                            { name: '神圣宝石', count: 3 },
+                            { name: '龙鳞片', count: 2 }
+                        ];
+                    }
                     
                     testMaterials.forEach(material => {
                         const existing = player.materials.find(m => m.name === material.name);
